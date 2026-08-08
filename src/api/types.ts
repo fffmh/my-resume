@@ -52,6 +52,8 @@ export interface ResumeRecord {
   html: string
   text: string
   createdAt: string
+  score?: number
+  suggestions?: string[]
 }
 
 export interface ResumeGroup {
@@ -110,6 +112,9 @@ export interface IResumeAPI {
   exportData(): Promise<string>
   /** 从 JSON 字符串恢复全部数据 */
   importData(json: string): Promise<void>
+
+  /** 一键填充示例数据（仅填充空信息库，不清用户数据） */
+  seedDemo(): Promise<void>
   /** 清空本地全部数据 */
   clearAll(): Promise<void>
 }

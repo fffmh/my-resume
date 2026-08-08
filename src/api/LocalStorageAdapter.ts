@@ -1,7 +1,9 @@
 import { classifyText } from './classify'
+import { DEMO_ENTRIES } from './demo'
 import { buildResume } from './merge'
 import { DEFAULT_PLACEHOLDERS, DEFAULT_SECTIONS } from './presets'
 import { STYLE_NAMES } from './resumeTemplates'
+import { scoreResume } from './score'
 import { clearStore, deleteValue, getAll, getOne, putValue, STORES } from './storage'
 import { genId } from './util'
 import type {
@@ -160,6 +162,7 @@ export class LocalStorageAdapter implements IResumeAPI {
     await this.wait()
     const sections = await getAll<SectionData>('sections')
     const { html, text, title } = buildResume(sections, input)
+    const scoreInfo = scoreResume(sections, input.targetJob, input.jd)
     const record: ResumeRecord = {
       id: genId(),
       title,
@@ -169,6 +172,8 @@ export class LocalStorageAdapter implements IResumeAPI {
       html,
       text,
       createdAt: new Date().toISOString(),
+      score: scoreInfo.total,
+      suggestions: scoreInfo.suggestions,
     }
     return { record }
   }
@@ -195,6 +200,28 @@ export class LocalStorageAdapter implements IResumeAPI {
   async saveSettings(settings: AppSettings): Promise<void> {
     await this.wait()
     await putValue('settings', { id: 'main', ...settings })
+  }
+
+  async seedDemo(): Promise<void> {
+    await this.wait()
+    await this.ensureSeeded()
+    const sections = await getAll<SectionData>('sections')
+    let filled = 0
+    for (const [sectionId, entries] of Object.entries(DEMO_ENTRIES)) {
+      const section = sections.find((s) => s.id === sectionId)
+      if (!section || !entries.length) continue
+      if (section.single) {
+        if (!section.entries.length) {
+          section.entries = [{ ...entries[0] }]
+          filled++
+        }
+      } else if (!section.entries.length) {
+        section.entries = entries.map((x) => ({ ...x }))
+        filled++
+      }
+      await putValue('sections', section)
+    }
+    void filled
   }
 
   async exportData(): Promise<string> {

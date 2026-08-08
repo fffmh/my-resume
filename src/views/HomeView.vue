@@ -16,6 +16,20 @@ const loading = ref(true)
 const showCustom = ref(false)
 const customName = ref('')
 const customFields = ref('')
+const seeding = ref(false)
+
+async function seedDemo() {
+  seeding.value = true
+  try {
+    await api.seedDemo()
+    const filled = (await api.getSections()).filter((s) => s.entries.length).length
+    toast(`已填充 ${filled} 个信息库示例数据，去「生成简历」体验一下吧`)
+  } catch (err) {
+    toast(`填充失败：${(err as Error).message}`, 'error')
+  } finally {
+    seeding.value = false
+  }
+}
 
 async function load() {
   loading.value = true
@@ -77,6 +91,9 @@ const tools = [
           <h1 class="hero-title">让每一份简历，<br /><span>都流光溢彩。</span></h1>
           <p class="hero-sub">信息库 · 智能导入 · 岗位匹配生成 · 简历库分组 —— 一套为求职者打造的简历工作台。</p>
           <div class="hero-actions">
+            <button class="btn btn-holo" type="button" :disabled="seeding" @click="seedDemo">
+              <AppIcon name="sparkles" :size="16" /> {{ seeding ? '填充中…' : '一键体验' }}
+            </button>
             <router-link to="/generate" class="btn btn-primary">✦ 生成简历</router-link>
             <router-link to="/resumes" class="btn btn-ghost">浏览简历库</router-link>
           </div>

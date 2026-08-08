@@ -27,6 +27,10 @@ const ICONS: Record<string, string[]> = {
   doc: ['<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>', '<polyline points="14 2 14 8 20 8"/>'],
   edit: ['<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>', '<path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>'],
   file: ['<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>', '<polyline points="14 2 14 8 20 8"/>', '<line x1="16" y1="13" x2="8" y2="13"/>', '<line x1="16" y1="17" x2="8" y2="17"/>'],
+  sun: ['<circle cx="12" cy="12" r="4"/>', '<path d="M12 2v2"/>', '<path d="M12 20v2"/>', '<path d="m4.93 4.93 1.41 1.41"/>', '<path d="m17.66 17.66 1.41 1.41"/>', '<path d="M2 12h2"/>', '<path d="M20 12h2"/>', '<path d="m6.34 17.66-1.41 1.41"/>', '<path d="m19.07 4.93-1.41 1.41"/>'],
+  moon: ['<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>'],
+  search: ['<circle cx="11" cy="11" r="7"/>', '<line x1="21" y1="21" x2="16.65" y2="16.65"/>'],
+  print: ['<polyline points="6 9 6 2 18 2 18 9"/>', '<path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>', '<rect x="6" y="14" width="12" height="8"/>'],
 }
 
 const html = computed(() => (ICONS[props.name] || []).join(''))

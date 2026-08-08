@@ -52,6 +52,19 @@ describe('LocalStorageAdapter', () => {
     expect(String(basic.entries[0]?.name)).toBe('李四')
   })
 
+  it('seedDemo 非破坏性：已有数据不被覆盖、空库被填充', async () => {
+    await api.getSections() // 播种
+    await api.addEntry('basic', { id: genId(), name: '已有用户', phone: '1' })
+    await api.seedDemo()
+    const sections = await api.getSections()
+    const basic = sections.find((s) => s.id === 'basic')!
+    expect(String(basic.entries[0].name)).toBe('已有用户')
+    const work = sections.find((s) => s.id === 'work')!
+    expect(work.entries.length).toBeGreaterThan(0)
+    const skills = sections.find((s) => s.id === 'skills')!
+    expect(skills.entries.length).toBeGreaterThanOrEqual(3)
+  })
+
   it('设置保存与读取', async () => {
     await api.saveSettings({ llm: { baseUrl: 'https://api.deepseek.com', apiKey: 'sk-test', model: 'deepseek-chat' } })
     const settings = await api.getSettings()

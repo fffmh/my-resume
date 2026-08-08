@@ -104,6 +104,10 @@ export class HttpAdapter implements IResumeAPI {
     return this.req('POST', '/api/data/import', JSON.parse(json))
   }
 
+  seedDemo(): Promise<void> {
+    return this.req('POST', '/api/demo')
+  }
+
   clearAll(): Promise<void> {
     return this.req('DELETE', '/api/data')
   }

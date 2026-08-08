@@ -27,6 +27,6 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 </template>
 
 <style scoped>
-.icon-btn { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 9px; background: rgba(255,255,255,0.06); border: 1px solid var(--glass-border); color: var(--ink-dim); cursor: pointer; transition: all 0.2s; }
+.icon-btn { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 9px; background: var(--glass-bg); border: 1px solid var(--line); color: var(--ink-dim); cursor: pointer; transition: all 0.2s; }
 .icon-btn:hover { color: var(--ink); border-color: rgba(56,225,255,0.5); }
 </style>

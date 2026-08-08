@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { printResume } from '../api/print'
 import type { ResumeRecord } from '../api/types'
+import AppIcon from './AppIcon.vue'
 import Modal from './Modal.vue'
 
 defineProps<{ record: ResumeRecord }>()
@@ -10,6 +12,7 @@ const emit = defineEmits<{ close: [] }>()
   <Modal title="简历预览" width="860px" @close="emit('close')">
     <iframe :srcdoc="record.html" class="preview-frame" title="简历预览" />
     <div class="preview-bar">
+      <button class="btn btn-ghost btn-sm" type="button" @click="printResume(record.html)"><AppIcon name="print" :size="15" /> 打印 / 另存为 PDF</button>
       <span class="chip">{{ record.styleName }}</span>
       <span class="chip">目标岗位：{{ record.targetJob || '未填写' }}</span>
     </div>

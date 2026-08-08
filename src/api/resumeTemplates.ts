@@ -5,6 +5,8 @@ export const STYLE_NAMES: Record<string, string> = {
   aurora: '极光 · 现代',
   minimal: '静界 · 简洁',
   classic: '曜石 · 经典',
+  royal: '鎏金 · 商务',
+  holotech: '全息 · 科技',
 }
 
 function escapeHtml(value: string): string {
@@ -280,9 +282,139 @@ ${SHARED_CSS}
 </div></div></body></html>`
 }
 
+
+/** 鎏金 · 商务：金/深蓝，精致居中排版 */
+function renderRoyal(data: ResumeData, keywords: Set<string>): string {
+  const b = data.basic
+  const workItems = data.work.map((w) => `<div class="item">
+    <div class="row"><span class="t">${escapeHtml(str(w.position))} · ${escapeHtml(str(w.company))}</span><span class="muted">${escapeHtml(fmtRange(str(w.start), str(w.end)))}</span></div>
+    <ul>${bullets(w.content, keywords)}${bullets(w.achievement, keywords)}</ul>
+  </div>`).join('')
+  const projectItems = data.project.map((p) => `<div class="item">
+    <div class="row"><span class="t">${escapeHtml(str(p.name))}</span><span class="muted">${escapeHtml(str(p.role))} · ${escapeHtml(fmtRange(str(p.start), str(p.end)))}</span></div>
+    ${str(p.tech) ? `<div class="sub">${escapeHtml(str(p.tech))}</div>` : ''}
+    <ul>${bullets(p.desc, keywords)}${bullets(p.contribution, keywords)}</ul>
+  </div>`).join('')
+  const eduItems = data.education.map((e) => `<div class="item">
+    <div class="row"><span class="t">${escapeHtml(str(e.school))}</span><span class="muted">${escapeHtml(fmtRange(str(e.start), str(e.end)))}</span></div>
+    <div class="sub">${escapeHtml(str(e.major))}${str(e.degree) ? ' · ' + escapeHtml(str(e.degree)) : ''}</div>
+  </div>`).join('')
+  const skillItems = data.skills.map((s) => `<span class="tag">${escapeHtml(str(s.name))}</span>`).join('')
+  const certItems = data.certificate.map((c) => `<div class="cert">${escapeHtml(str(c.name))}<span class="muted">${escapeHtml(str(c.org))}</span></div>`).join('')
+
+  return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"/>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Hanken+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root { --accent: #d9b76a; }
+${SHARED_CSS}
+.page { width: 794px; min-height: 1123px; margin: 0 auto; padding: 44px;
+  background: radial-gradient(900px 420px at 50% -8%, rgba(217,183,106,.16), transparent 60%), linear-gradient(170deg, #080b18, #0b1022); }
+.card { padding: 40px 50px; border-radius: 4px; border: 1px solid rgba(217,183,106,.28); background: rgba(255,255,255,.03); box-shadow: 0 24px 60px rgba(0,0,0,.45); }
+.head { text-align: center; padding-bottom: 22px; border-bottom: 1px solid rgba(217,183,106,.25); margin-bottom: 26px; }
+.name { font-size: 44px; font-weight: 800; letter-spacing: .06em; color: #f3edd6; }
+.role { margin-top: 10px; color: #d9b76a; letter-spacing: .3em; font-size: 13px; }
+.meta { display: flex; justify-content: center; flex-wrap: wrap; gap: 14px; margin-top: 16px; color: #9aa5c8; font-size: 12.5px; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px 40px; }
+.item { margin-bottom: 18px; }
+.tag { display: inline-block; padding: 4px 12px; margin: 0 6px 8px 0; border-radius: 2px; font-size: 12px; color: #e6cf9a; border: 1px solid rgba(217,183,106,.35); background: rgba(217,183,106,.06); }
+.cert { display: flex; justify-content: space-between; font-size: 13px; color: #d6ddf2; padding: 6px 0; }
+.self { font-size: 13.5px; line-height: 1.85; color: #c6cee8; }
+</style></head><body><div class="page"><div class="card">
+  <div class="head">
+    <div class="name">${escapeHtml(b.name || '未填写姓名')}</div>
+    <div class="role">${escapeHtml(data.targetJob || data.intention.position || '')}</div>
+    <div class="meta">${[b.phone, b.email, b.city, b.years ? b.years + '经验' : '', b.degree, b.homepage].filter(Boolean).map((x) => `<span>${escapeHtml(x!)}</span>`).join('')}</div>
+  </div>
+  <div class="grid">
+    <div>
+      ${section('求职意向', data.intention.position ? `<div class="item"><span class="t">${escapeHtml(str(data.intention.position))}</span><span class="muted">　${escapeHtml(str(data.intention.salary))} · ${escapeHtml(str(data.intention.city))}</span></div>` : '')}
+      ${section('工作经历', workItems)}
+      ${section('项目经历', projectItems)}
+    </div>
+    <div>
+      ${section('技能特长', skillItems ? `<div>${skillItems}</div>` : '')}
+      ${section('教育经历', eduItems)}
+      ${section('证书资质', certItems)}
+      ${section('自我评价', data.self ? `<div class="self">${highlight(data.self, keywords)}</div>` : '')}
+    </div>
+  </div>
+</div></div></body></html>`
+}
+
+/** 全息 · 科技：青蓝辉光 HUD 风格 */
+function renderHolotech(data: ResumeData, keywords: Set<string>): string {
+  const b = data.basic
+  const workItems = data.work.map((w) => `<div class="item">
+    <div class="row"><span class="t">${escapeHtml(str(w.position))}</span><span class="muted">${escapeHtml(str(w.company))} · ${escapeHtml(fmtRange(str(w.start), str(w.end)))}</span></div>
+    <ul>${bullets(w.content, keywords)}${bullets(w.achievement, keywords)}</ul>
+  </div>`).join('')
+  const projectItems = data.project.map((p) => `<div class="item">
+    <div class="row"><span class="t">${escapeHtml(str(p.name))}</span><span class="muted">${escapeHtml(str(p.role))} · ${escapeHtml(fmtRange(str(p.start), str(p.end)))}</span></div>
+    ${str(p.tech) ? `<div class="tech">${escapeHtml(str(p.tech))}</div>` : ''}
+    <ul>${bullets(p.desc, keywords)}${bullets(p.contribution, keywords)}</ul>
+  </div>`).join('')
+  const eduItems = data.education.map((e) => `<div class="item">
+    <div class="row"><span class="t">${escapeHtml(str(e.school))}</span><span class="muted">${escapeHtml(str(e.major))} · ${escapeHtml(fmtRange(str(e.start), str(e.end)))}</span></div>
+    ${str(e.honor) ? `<ul>${bullets(e.honor, keywords)}</ul>` : ''}
+  </div>`).join('')
+  const skillItems = data.skills.map((s) => `<span class="tag">${escapeHtml(str(s.name))}<i>${escapeHtml(str(s.level))}</i></span>`).join('')
+  const certItems = data.certificate.map((c) => `<span class="cert">${escapeHtml(str(c.name))}</span>`).join('')
+
+  return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"/>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Hanken+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root { --accent: #38e1ff; }
+${SHARED_CSS}
+.page { width: 794px; min-height: 1123px; margin: 0 auto; padding: 40px;
+  background:
+    radial-gradient(700px 360px at 12% -8%, rgba(56,225,255,.16), transparent 60%),
+    radial-gradient(760px 420px at 108% 8%, rgba(79,124,255,.18), transparent 60%),
+    linear-gradient(165deg, #04060d, #070c1a 60%, #050913);
+  position: relative; }
+.page::before { content: ''; position: absolute; inset: 0; pointer-events: none;
+  background-image: linear-gradient(rgba(56,225,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(56,225,255,.05) 1px, transparent 1px);
+  background-size: 40px 40px; }
+.card { position: relative; padding: 36px 42px; border-radius: 12px; border: 1px solid rgba(56,225,255,.3);
+  background: rgba(7,13,28,.6); backdrop-filter: blur(12px); box-shadow: 0 0 42px rgba(56,225,255,.12), inset 0 0 22px rgba(56,225,255,.04); }
+.head { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding-bottom: 18px; border-bottom: 1px solid rgba(56,225,255,.22); margin-bottom: 24px; }
+.name { font-size: 40px; font-weight: 800; letter-spacing: .02em; color: #eaf6ff; text-shadow: 0 0 22px rgba(56,225,255,.5); }
+.role { margin-top: 8px; color: #38e1ff; letter-spacing: .2em; font-size: 12.5px; }
+.badge { padding: 6px 12px; border-radius: 4px; font-size: 11px; letter-spacing: .18em; color: #03141c; font-weight: 700; background: linear-gradient(90deg, #38e1ff, #6ea8ff); box-shadow: 0 0 26px rgba(56,225,255,.55); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px; }
+.chip { padding: 5px 12px; border-radius: 4px; font-size: 12px; color: #bdeaff; border: 1px solid rgba(56,225,255,.35); background: rgba(56,225,255,.07); }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px 34px; }
+.tag { display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; margin: 0 6px 8px 0; border-radius: 4px; font-size: 12.5px; color: #c9f3ff; border: 1px solid rgba(56,225,255,.35); background: rgba(56,225,255,.08); }
+.tag i { font-style: normal; font-size: 11px; color: #38e1ff; }
+.tech { font-size: 12px; color: #38e1ff; letter-spacing: .06em; margin: 3px 0 8px; }
+.cert { display: inline-block; padding: 5px 12px; margin: 0 6px 8px 0; font-size: 12px; color: #bdeaff; border: 1px dashed rgba(56,225,255,.4); }
+.self { font-size: 13.5px; line-height: 1.85; color: #bfd9f2; }
+</style></head><body><div class="page"><div class="card">
+  <div class="head">
+    <div><div class="name">${escapeHtml(b.name || '未填写姓名')}</div><div class="role">${escapeHtml(data.targetJob || data.intention.position || '')}</div></div>
+    <span class="badge">SYSTEM · RESUME</span>
+  </div>
+  <div class="chips">${contactChips(data)}</div>
+  <div class="grid">
+    <div>
+      ${section('求职意向', data.intention.position ? `<div class="item"><span class="t">${escapeHtml(str(data.intention.position))}</span><span class="muted">　${escapeHtml(str(data.intention.salary))} · ${escapeHtml(str(data.intention.city))}</span></div>` : '')}
+      ${section('工作经历', workItems)}
+      ${section('项目经历', projectItems)}
+    </div>
+    <div>
+      ${section('技能特长', skillItems ? `<div>${skillItems}</div>` : '')}
+      ${section('教育经历', eduItems)}
+      ${section('证书资质', certItems ? `<div>${certItems}</div>` : '')}
+      ${section('自我评价', data.self ? `<div class="self">${highlight(data.self, keywords)}</div>` : '')}
+    </div>
+  </div>
+</div></div></body></html>`
+}
+
 export function renderResume(style: string, data: ResumeData, keywords?: Set<string>): string {
   const kws = keywords ?? new Set<string>()
   if (style === 'minimal') return renderMinimal(data, kws)
   if (style === 'classic') return renderClassic(data, kws)
+  if (style === 'royal') return renderRoyal(data, kws)
+  if (style === 'holotech') return renderHolotech(data, kws)
   return renderAurora(data, kws)
 }

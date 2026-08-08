@@ -12,6 +12,8 @@ const route = useRoute()
     <div class="bg bg-orb-2"></div>
     <div class="bg bg-orb-3"></div>
     <div class="bg bg-grid"></div>
+    <div class="bg bg-dataflow"></div>
+    <div class="scanline" aria-hidden="true"></div>
 
     <div class="demo-banner">演示版 · 数据仅保存在当前浏览器（IndexedDB），跨设备或清缓存会丢失；第二阶段将接入真实后端与 AI</div>
     <AppHeader />
