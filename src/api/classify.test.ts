@@ -64,6 +64,31 @@ describe('classifyText', () => {
     expect(names).toContain('TypeScript')
   })
 
+  it('识别带空格手机号、新式日期与别名小节', () => {
+    const text = `
+林澈
+138 0013 8000
+
+教育背景
+2021.7-至今 复旦大学 计算机科学与技术 硕士
+
+专业技能
+Vue3, TypeScript, Docker
+
+期望城市：上海
+`
+    const { sections } = classifyText(text)
+    expect(String(sections.basic?.[0]?.phone)).toBe('13800138000')
+    expect(String(sections.basic?.[0]?.name)).toBe('林澈')
+    const edu = sections.education?.[0] ?? {}
+    expect(String(edu.school)).toContain('复旦大学')
+    expect(String(edu.start)).toContain('2021')
+    expect(String(edu.end)).toBe('至今')
+    const skills = (sections.skills ?? []).map((s) => String(s.name))
+    expect(skills).toContain('Docker')
+    expect(String(sections.intention?.[0]?.city)).toBe('上海')
+  })
+
   it('识别自我评价', () => {
     const { sections } = classifyText(SAMPLE)
     const self = sections.self?.[0] ?? {}

@@ -198,4 +198,8 @@ async function removeResume(record: ResumeRecord) {
 .score-chip.mid { color: var(--accent-1); background: rgba(56, 225, 255, 0.1); border-color: rgba(56, 225, 255, 0.35); }
 .score-chip.low { color: var(--danger); background: rgba(255, 107, 139, 0.1); border-color: rgba(255, 107, 139, 0.4); }
 .preview-frame { width: 100%; height: 70vh; border: none; border-radius: 12px; background: #0a0f1e; }
+@media (max-width: 640px) {
+  .search-box { max-width: none; }
+  .preview-frame { height: 60vh; }
+}
 </style>

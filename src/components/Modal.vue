@@ -15,7 +15,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 <template>
   <Teleport to="body">
     <div class="modal-overlay" @click.self="emit('close')">
-      <div class="modal" :style="{ width: props.width }" role="dialog" aria-modal="true" :aria-label="title">
+      <div class="modal" :style="{ width: props.width, maxWidth: '100%' }" role="dialog" aria-modal="true" :aria-label="title">
         <div class="modal-head">
           <h3>{{ title }}</h3>
           <button class="icon-btn" type="button" aria-label="关闭" @click="emit('close')"><AppIcon name="close" :size="18" /></button>

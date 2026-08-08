@@ -7,6 +7,9 @@ export const STYLE_NAMES: Record<string, string> = {
   classic: '曜石 · 经典',
   royal: '鎏金 · 商务',
   holotech: '全息 · 科技',
+  mono: '极客 · 终端',
+  ocean: '深海 · 渐变',
+  paper: '白纸 · 打印',
 }
 
 function escapeHtml(value: string): string {
@@ -410,11 +413,217 @@ ${SHARED_CSS}
 </div></div></body></html>`
 }
 
+
+/** 极客 · 终端：等宽字体 + 终端绿，命令行气息 */
+function renderMono(data: ResumeData, keywords: Set<string>): string {
+  const b = data.basic
+  const workItems = data.work.map((w) => `<div class="item">
+    <div class="row"><span class="t">${escapeHtml(str(w.position))} @ ${escapeHtml(str(w.company))}</span><span class="muted">${escapeHtml(fmtRange(str(w.start), str(w.end)))}</span></div>
+    <ul>${bullets(w.content, keywords)}${bullets(w.achievement, keywords)}</ul>
+  </div>`).join('')
+  const projectItems = data.project.map((p) => `<div class="item">
+    <div class="row"><span class="t">${escapeHtml(str(p.name))}</span><span class="muted">${escapeHtml(str(p.role))} · ${escapeHtml(fmtRange(str(p.start), str(p.end)))}</span></div>
+    ${str(p.tech) ? `<div class="tech">$ { ${escapeHtml(str(p.tech))} }</div>` : ''}
+    <ul>${bullets(p.desc, keywords)}${bullets(p.contribution, keywords)}</ul>
+  </div>`).join('')
+  const eduItems = data.education.map((e) => `<div class="item">
+    <div class="row"><span class="t">${escapeHtml(str(e.school))}</span><span class="muted">${escapeHtml(fmtRange(str(e.start), str(e.end)))}</span></div>
+    <div class="muted">${escapeHtml(str(e.major))}${str(e.degree) ? ' · ' + escapeHtml(str(e.degree)) : ''}</div>
+  </div>`).join('')
+  const skillItems = data.skills.map((s) => `<span class="tag">${escapeHtml(str(s.name))}</span>`).join('')
+  const certItems = data.certificate.map((c) => `<div class="cert">${escapeHtml(str(c.name))} <span class="muted">${escapeHtml(str(c.org))}</span></div>`).join('')
+
+  return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"/>
+<style>
+:root { --accent: #22d3aa; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Hanken Grotesk', 'Microsoft YaHei UI', system-ui, sans-serif; background: #04070c; color: #cfe6d8; }
+h1, h2, h3, .t, .mono { font-family: ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, 'Microsoft YaHei UI', monospace; }
+.page { width: 794px; min-height: 1123px; margin: 0 auto; padding: 40px;
+  background: linear-gradient(180deg, #05090f, #071018); }
+.card { padding: 36px 42px; border: 1px solid rgba(34,211,170,.35); border-radius: 8px; background: rgba(8,16,24,.7); box-shadow: 0 0 40px rgba(34,211,170,.08); }
+.head { padding-bottom: 16px; border-bottom: 1px dashed rgba(34,211,170,.4); margin-bottom: 24px; }
+.name { font-size: 36px; font-weight: 700; color: #7ef0d0; letter-spacing: .04em; }
+.name::before { content: '$> '; color: #22d3aa; }
+.role { margin-top: 8px; color: #22d3aa; letter-spacing: .12em; font-size: 13px; }
+.meta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 14px; color: #7f9aa6; font-size: 12px; font-family: ui-monospace, Consolas, monospace; }
+.sec-title { font-size: 14px; font-weight: 700; color: #7ef0d0; margin-bottom: 12px; }
+.sec-title::before { content: '// '; color: #22d3aa; }
+ul { list-style: none; }
+li { position: relative; padding-left: 18px; margin: 5px 0; line-height: 1.65; font-size: 13px; color: #b9d4c4; }
+li::before { content: '>'; position: absolute; left: 0; color: #22d3aa; }
+mark { background: rgba(34,211,170,.18); color: #9ff5d8; border-radius: 2px; padding: 0 2px; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px 36px; }
+.item { margin-bottom: 16px; }
+.row { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; margin-bottom: 6px; }
+.t { font-size: 14px; color: #e8fff4; }
+.tech { font-size: 11.5px; color: #22d3aa; margin: 4px 0 8px; font-family: ui-monospace, Consolas, monospace; }
+.tag { display: inline-block; padding: 4px 10px; margin: 0 6px 8px 0; font-size: 12px; color: #7ef0d0; border: 1px solid rgba(34,211,170,.4); background: rgba(34,211,170,.06); font-family: ui-monospace, Consolas, monospace; }
+.cert { font-size: 13px; color: #b9d4c4; padding: 5px 0; }
+.self { font-size: 13.5px; line-height: 1.85; color: #b9d4c4; }
+.muted { color: #7f9aa6; }
+</style></head><body><div class="page"><div class="card">
+  <div class="head">
+    <div class="name">${escapeHtml(b.name || '未填写姓名')}</div>
+    <div class="role">${escapeHtml(data.targetJob || data.intention.position || '')}</div>
+    <div class="meta">${[b.phone, b.email, b.city, b.years ? b.years + '经验' : '', b.degree, b.homepage].filter(Boolean).map((x) => `<span>${escapeHtml(x!)}</span>`).join('')}</div>
+  </div>
+  <div class="grid">
+    <div>
+      ${section('求职意向', data.intention.position ? `<div class="item"><span class="t">${escapeHtml(str(data.intention.position))}</span><span class="muted">　${escapeHtml(str(data.intention.salary))} · ${escapeHtml(str(data.intention.city))}</span></div>` : '')}
+      ${section('工作经历', workItems)}
+      ${section('项目经历', projectItems)}
+    </div>
+    <div>
+      ${section('技能特长', skillItems ? `<div>${skillItems}</div>` : '')}
+      ${section('教育经历', eduItems)}
+      ${section('证书资质', certItems)}
+      ${section('自我评价', data.self ? `<div class="self">${highlight(data.self, keywords)}</div>` : '')}
+    </div>
+  </div>
+</div></div></body></html>`
+}
+
+/** 深海 · 渐变：蓝绿渐变 + 圆角卡片，清爽科技 */
+function renderOcean(data: ResumeData, keywords: Set<string>): string {
+  const b = data.basic
+  const workItems = data.work.map((w) => `<div class="item">
+    <div class="row"><span class="t">${escapeHtml(str(w.position))}</span><span class="muted">${escapeHtml(str(w.company))} · ${escapeHtml(fmtRange(str(w.start), str(w.end)))}</span></div>
+    <ul>${bullets(w.content, keywords)}${bullets(w.achievement, keywords)}</ul>
+  </div>`).join('')
+  const projectItems = data.project.map((p) => `<div class="item">
+    <div class="row"><span class="t">${escapeHtml(str(p.name))}</span><span class="muted">${escapeHtml(str(p.role))} · ${escapeHtml(fmtRange(str(p.start), str(p.end)))}</span></div>
+    ${str(p.tech) ? `<div class="tech">${escapeHtml(str(p.tech))}</div>` : ''}
+    <ul>${bullets(p.desc, keywords)}${bullets(p.contribution, keywords)}</ul>
+  </div>`).join('')
+  const eduItems = data.education.map((e) => `<div class="item">
+    <div class="row"><span class="t">${escapeHtml(str(e.school))}</span><span class="muted">${escapeHtml(str(e.major))} · ${escapeHtml(fmtRange(str(e.start), str(e.end)))}</span></div>
+  </div>`).join('')
+  const skillItems = data.skills.map((s) => `<span class="tag">${escapeHtml(str(s.name))}<i>${escapeHtml(str(s.level))}</i></span>`).join('')
+  const certItems = data.certificate.map((c) => `<div class="cert">${escapeHtml(str(c.name))} <span class="muted">${escapeHtml(str(c.org))}</span></div>`).join('')
+
+  return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"/>
+<style>
+:root { --accent: #2dd4bf; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Hanken Grotesk', 'Microsoft YaHei UI', system-ui, sans-serif; }
+.page { width: 794px; min-height: 1123px; margin: 0 auto; padding: 40px;
+  background: linear-gradient(160deg, #0a2a43, #0f3d5c 45%, #0b2f52); }
+.card { padding: 36px 42px; border-radius: 20px; background: rgba(255,255,255,.07); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,.14); box-shadow: 0 24px 60px rgba(0,0,0,.4); }
+.name { font-size: 42px; font-weight: 800; color: #f0fdff; letter-spacing: .02em; }
+.role { margin-top: 8px; color: #2dd4bf; letter-spacing: .16em; font-size: 13.5px; }
+.meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+.chip { padding: 5px 12px; border-radius: 999px; font-size: 12px; color: #d6f6ff; background: rgba(45,212,191,.14); border: 1px solid rgba(45,212,191,.35); }
+.sec-title { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 700; color: #eafaff; margin-bottom: 12px; }
+.sec-title::after { content: ''; flex: 1; height: 2px; border-radius: 2px; background: linear-gradient(90deg, rgba(45,212,191,.6), transparent); }
+ul { list-style: none; }
+li { position: relative; padding-left: 16px; margin: 5px 0; line-height: 1.65; font-size: 13px; color: #cfe9f2; }
+li::before { content: ''; position: absolute; left: 2px; top: 8px; width: 5px; height: 5px; border-radius: 50%; background: #2dd4bf; box-shadow: 0 0 8px #2dd4bf; }
+mark { background: rgba(45,212,191,.2); color: #a9f5e8; border-radius: 3px; padding: 0 2px; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px 36px; }
+.item { margin-bottom: 16px; }
+.row { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; margin-bottom: 6px; }
+.t { font-size: 14px; font-weight: 700; color: #eafaff; }
+.tech { font-size: 12px; color: #2dd4bf; margin: 3px 0 8px; }
+.tag { display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; margin: 0 6px 8px 0; border-radius: 999px; font-size: 12.5px; color: #d6f6ff; background: rgba(45,212,191,.12); border: 1px solid rgba(45,212,191,.35); }
+.tag i { font-style: normal; font-size: 11px; color: #2dd4bf; }
+.cert { font-size: 13px; color: #cfe9f2; padding: 5px 0; }
+.self { font-size: 13.5px; line-height: 1.85; color: #cfe9f2; }
+.muted { color: #9fc0cf; }
+</style></head><body><div class="page"><div class="card">
+  <div class="name">${escapeHtml(b.name || '未填写姓名')}</div>
+  <div class="role">${escapeHtml(data.targetJob || data.intention.position || '')}</div>
+  <div class="meta">${[b.phone, b.email, b.city, b.years ? b.years + '经验' : '', b.degree, b.homepage].filter(Boolean).map((x) => `<span class="chip">${escapeHtml(x!)}</span>`).join('')}</div>
+  <div style="height: 18px;"></div>
+  <div class="grid">
+    <div>
+      ${section('求职意向', data.intention.position ? `<div class="item"><span class="t">${escapeHtml(str(data.intention.position))}</span><span class="muted">　${escapeHtml(str(data.intention.salary))} · ${escapeHtml(str(data.intention.city))}</span></div>` : '')}
+      ${section('工作经历', workItems)}
+      ${section('项目经历', projectItems)}
+    </div>
+    <div>
+      ${section('技能特长', skillItems ? `<div>${skillItems}</div>` : '')}
+      ${section('教育经历', eduItems)}
+      ${section('证书资质', certItems)}
+      ${section('自我评价', data.self ? `<div class="self">${highlight(data.self, keywords)}</div>` : '')}
+    </div>
+  </div>
+</div></div></body></html>`
+}
+
+/** 白纸 · 打印：白底黑字经典版，适合直接打印 */
+function renderPaper(data: ResumeData, keywords: Set<string>): string {
+  const b = data.basic
+  const workItems = data.work.map((w) => `<div class="item">
+    <div class="row"><span class="t">${escapeHtml(str(w.position))} · ${escapeHtml(str(w.company))}</span><span class="muted">${escapeHtml(fmtRange(str(w.start), str(w.end)))}</span></div>
+    <ul>${bullets(w.content, keywords)}${bullets(w.achievement, keywords)}</ul>
+  </div>`).join('')
+  const projectItems = data.project.map((p) => `<div class="item">
+    <div class="row"><span class="t">${escapeHtml(str(p.name))}</span><span class="muted">${escapeHtml(str(p.role))} · ${escapeHtml(fmtRange(str(p.start), str(p.end)))}</span></div>
+    ${str(p.tech) ? `<div class="sub">${escapeHtml(str(p.tech))}</div>` : ''}
+    <ul>${bullets(p.desc, keywords)}${bullets(p.contribution, keywords)}</ul>
+  </div>`).join('')
+  const eduItems = data.education.map((e) => `<div class="item">
+    <div class="row"><span class="t">${escapeHtml(str(e.school))}</span><span class="muted">${escapeHtml(fmtRange(str(e.start), str(e.end)))}</span></div>
+    <div class="sub">${escapeHtml(str(e.major))}${str(e.degree) ? ' · ' + escapeHtml(str(e.degree)) : ''}</div>
+  </div>`).join('')
+  const skillItems = data.skills.map((s) => `<span class="tag">${escapeHtml(str(s.name))}</span>`).join('')
+  const certItems = data.certificate.map((c) => `<div class="cert">${escapeHtml(str(c.name))} <span class="muted">${escapeHtml(str(c.org))}</span></div>`).join('')
+
+  return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"/>
+<style>
+:root { --accent: #1e3a8a; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Hanken Grotesk', 'Microsoft YaHei UI', system-ui, sans-serif; background: #ffffff; color: #1a1a1a; }
+h1, h2, h3 { font-family: Georgia, 'Times New Roman', 'Songti SC', 'Microsoft YaHei UI', serif; }
+.page { width: 794px; min-height: 1123px; margin: 0 auto; padding: 44px; }
+.card { padding: 8px 4px; }
+.name { font-size: 38px; font-weight: 700; color: #111827; letter-spacing: .02em; }
+.role { margin-top: 8px; color: #1e3a8a; letter-spacing: .12em; font-size: 14px; font-weight: 600; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 14px; color: #4b5563; font-size: 12.5px; }
+.sec-title { font-size: 15px; font-weight: 700; color: #111827; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 2px solid #1e3a8a; }
+ul { list-style: none; }
+li { position: relative; padding-left: 16px; margin: 4px 0; line-height: 1.6; font-size: 13px; color: #374151; }
+li::before { content: '•'; position: absolute; left: 2px; color: #1e3a8a; }
+mark { background: #fef3c7; color: #111827; padding: 0 2px; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px 36px; }
+.item { margin-bottom: 14px; }
+.row { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; margin-bottom: 4px; }
+.t { font-size: 14px; font-weight: 700; color: #111827; }
+.sub { font-size: 12.5px; color: #4b5563; margin: 2px 0 6px; }
+.tag { display: inline-block; padding: 3px 10px; margin: 0 6px 8px 0; font-size: 12px; color: #1e3a8a; border: 1px solid #1e3a8a; border-radius: 2px; }
+.cert { font-size: 13px; color: #374151; padding: 4px 0; }
+.self { font-size: 13px; line-height: 1.8; color: #374151; }
+.muted { color: #6b7280; }
+</style></head><body><div class="page"><div class="card">
+  <div class="name">${escapeHtml(b.name || '未填写姓名')}</div>
+  <div class="role">${escapeHtml(data.targetJob || data.intention.position || '')}</div>
+  <div class="meta">${[b.phone, b.email, b.city, b.years ? b.years + '经验' : '', b.degree, b.homepage].filter(Boolean).map((x) => `<span>${escapeHtml(x!)}</span>`).join('')}</div>
+  <div style="height: 16px;"></div>
+  <div class="grid">
+    <div>
+      ${section('求职意向', data.intention.position ? `<div class="item"><span class="t">${escapeHtml(str(data.intention.position))}</span><span class="muted">　${escapeHtml(str(data.intention.salary))} · ${escapeHtml(str(data.intention.city))}</span></div>` : '')}
+      ${section('工作经历', workItems)}
+      ${section('项目经历', projectItems)}
+    </div>
+    <div>
+      ${section('技能特长', skillItems ? `<div>${skillItems}</div>` : '')}
+      ${section('教育经历', eduItems)}
+      ${section('证书资质', certItems)}
+      ${section('自我评价', data.self ? `<div class="self">${highlight(data.self, keywords)}</div>` : '')}
+    </div>
+  </div>
+</div></div></body></html>`
+}
+
 export function renderResume(style: string, data: ResumeData, keywords?: Set<string>): string {
   const kws = keywords ?? new Set<string>()
   if (style === 'minimal') return renderMinimal(data, kws)
   if (style === 'classic') return renderClassic(data, kws)
   if (style === 'royal') return renderRoyal(data, kws)
   if (style === 'holotech') return renderHolotech(data, kws)
+  if (style === 'mono') return renderMono(data, kws)
+  if (style === 'ocean') return renderOcean(data, kws)
+  if (style === 'paper') return renderPaper(data, kws)
   return renderAurora(data, kws)
 }

@@ -178,4 +178,9 @@ const tools = [
   .hero-inner { flex-direction: column; align-items: flex-start; }
   .hero-stats { width: 100%; justify-content: space-around; }
 }
+@media (max-width: 560px) {
+  .hero-actions { flex-direction: column; }
+  .hero-actions .btn { width: 100%; }
+  .hero-title { font-size: 30px; }
+}
 </style>

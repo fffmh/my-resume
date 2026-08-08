@@ -7,16 +7,21 @@ import { genId } from './util'
  */
 
 const RE_EMAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/
-const RE_PHONE = /(1[3-9]\d{9})|(0\d{2,3}-?\d{7,8})/
+const RE_PHONE = /(1[3-9]\d{9})|(0\d{2,3}\d{7,8})/
 const RE_DEGREE = /(博士|硕士研究生|硕士|本科|大专|专科|高中|中专|初中)/
 const RE_YEARS = /(\d+(?:\.\d+)?)\s*年/
-const RE_DATE_RANGE = /(\d{4})\s*[年.\/-]\s*(\d{1,2})?\s*[-~至到]\s*(\d{4})\s*[年.\/-]\s*(\d{1,2})?|(至今|现在|今)/
+const RE_DATE_RANGE = /(\d{4})\s*[年.\/-]\s*(\d{1,2})?\s*[-~至到]\s*(?:(\d{4})\s*[年.\/-]\s*(\d{1,2})?|(至今|现在|今))/
 
 const TECH_KEYWORDS = [
   'python', 'java', 'javascript', 'typescript', 'vue', 'react', 'node', 'nodejs', 'go', 'golang',
   'c++', 'c#', 'rust', 'sql', 'mysql', 'postgresql', 'redis', 'mongodb', 'docker', 'kubernetes',
   'k8s', 'linux', 'git', 'html', 'css', 'nginx', 'flutter', 'android', 'ios', '小程序', '微信小程序',
   'echarts', 'webpack', 'vite', 'pinia', 'redux', '微服务', '大数据', '算法', '机器学习', '深度学习',
+  'next.js', 'nuxt', 'tailwind', 'webpack5', 'babel', 'rollup', 'esbuild', 'sass', 'less', 'postcss',
+  'd3', 'three.js', 'canvas', 'webgl', 'uniapp', 'taro', 'electron', 'react native', 'express', 'koa',
+  'nestjs', 'spring', 'django', 'flask', 'fastapi', 'rabbitmq', 'kafka', 'elasticsearch', 'clickhouse',
+  'hive', 'spark', 'flink', 'pandas', 'numpy', 'pytorch', 'tensorflow', 'langchain', 'gitlab', 'jenkins',
+  'ci/cd', '云原生', 'serverless', '低代码', '可视化',
 ]
 
 function makeEntry(partial: Record<string, unknown> = {}): SectionEntry {
@@ -34,14 +39,14 @@ function splitTags(value: string): string {
 function extractDateRange(line: string): [string, string] {
   const m = line.match(RE_DATE_RANGE)
   if (!m) return ['', '']
-  if (m[5]) return [m[5] === '今' ? '至今' : m[5], '至今']
   const start = m[1] ? (m[2] ? `${m[1]}.${m[2].padStart(2, '0')}` : m[1]) : ''
+  if (m[5]) return [start, '至今']
   const end = m[3] ? (m[4] ? `${m[3]}.${m[4].padStart(2, '0')}` : m[3]) : ''
   return [start, end]
 }
 
 function isSectionHeader(line: string): boolean {
-  return /(教育经历|工作经历|项目经历|技能|证书|自我评价|求职意向|基本信息|个人总结|实习经历)/.test(line)
+  return /(教育经历|教育背景|学习经历|工作经历|工作履历|职业经历|从业经历|实习经历|项目经历|项目经验|项目实践|专业技能|技能特长|技能|技术栈|证书|认证|资格|自我评价|个人简介|自我介绍|关于我|求职意向|基本信息|个人总结)/.test(line)
 }
 
 export interface ClassifyResult {
@@ -61,12 +66,12 @@ export function classifyText(rawText: string): ClassifyResult {
 
   const lines = text.split(/\n/).map((l) => l.trim())
   const email = text.match(RE_EMAIL)?.[0] || ''
-  const phone = text.match(RE_PHONE)?.[0] || ''
+  const phone = (text.replace(/[\s-]/g, '').match(RE_PHONE)?.[0] || '')
   const degree = text.match(RE_DEGREE)?.[0] || ''
   const yearsMatch = text.match(RE_YEARS)
   const cityMatch = text.match(/(?:现居|所在城市|城市|居住地)\s*[:：]?\s*([^\s，,。]+)/)
   const nameMatch = text.match(/(?:姓名|名字)\s*[:：]\s*([^\s，,。]+)/)
-  const firstLine = lines.find((l) => /^[\u4e00-\u9fa5]{2,4}$/.test(l))
+  const firstLine = lines.find((l) => /^[\u4e00-\u9fa5]{2,4}$/.test(l) && !isSectionHeader(l))
 
   // 基本信息
   const basic: Record<string, unknown> = {}
@@ -77,6 +82,8 @@ export function classifyText(rawText: string): ClassifyResult {
   if (degree) basic.degree = degree
   if (yearsMatch) basic.years = `${yearsMatch[1]}年`
   if (cityMatch) basic.city = cityMatch[1]
+  const birthMatch = text.match(/(?:出生日期|生日|出生)\s*[:：]?\s*(\d{4}[-/.年]\d{1,2}(?:[-/.日]\d{1,2})?)/)
+  if (birthMatch) basic.birth = birthMatch[1]
   if (Object.keys(basic).length) push('basic', makeEntry(basic))
 
   // 求职意向
@@ -85,6 +92,8 @@ export function classifyText(rawText: string): ClassifyResult {
   const intention: Record<string, unknown> = {}
   if (posMatch) intention.position = posMatch[1].trim()
   if (salaryMatch) intention.salary = salaryMatch[1].trim()
+  const intentCity = text.match(/(?:期望城市|意向城市|工作城市|目标城市)\s*[:：]?\s*([^\s，,。]+)/)
+  if (intentCity) intention.city = intentCity[1]
   if (Object.keys(intention).length) push('intention', makeEntry(intention))
 
   // 教育经历 / 工作经历 / 项目经历 / 技能 / 证书 / 自我评价

@@ -123,7 +123,7 @@ async function save() {
 
     <Teleport to="body">
       <div v-if="previewOpen && record" class="modal-overlay" style="z-index: 120;">
-        <div class="modal" style="width: 900px; max-height: 94vh;" role="dialog" aria-modal="true" aria-label="简历预览">
+        <div class="modal" style="width: min(900px, 100%); max-height: 94vh;" role="dialog" aria-modal="true" aria-label="简历预览">
           <div class="modal-head">
             <h3>简历预览 · {{ record.title }}</h3>
             <div style="display: flex; gap: 10px; align-items: center;">
