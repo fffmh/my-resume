@@ -6,3 +6,6 @@ npm-debug.log*
 .vite
 data
 
+
+__pycache__/
+*.pyc
