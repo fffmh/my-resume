@@ -22,7 +22,7 @@ npm install        # 安装依赖（首次）
 npm run dev        # 开发服务器 → http://localhost:5173
 npm run build      # 生产构建 → dist/
 npm run preview    # 本地预览 dist/
-npm test           # 运行单元测试（17 项）
+npm test      # 运行单元测试（23 项）
 npm run typecheck  # TS 类型检查
 ```
 
