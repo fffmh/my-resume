@@ -19,6 +19,9 @@ const saving = ref(false)
 const record = ref<ResumeRecord | null>(null)
 const scoreInfo = ref<ResumeScore | null>(null)
 const previewOpen = ref(false)
+const templates = ref<{ id: string; name: string }[]>([])
+const selectedTemplateId = ref('')
+const exporting = ref(false)
 
 const steps = ['读取信息库资料', '按岗位匹配筛选素材', '优化措辞与量化表达', '渲染简历模板']
 const activeStep = ref(-1)
@@ -43,6 +46,9 @@ async function generate() {
     record.value = result.record
     const sections = await api.getSections()
     scoreInfo.value = scoreResume(sections, targetJob.value.trim(), jd.value)
+    const tpls = await api.getTemplates()
+    templates.value = tpls
+    if (tpls.length) selectedTemplateId.value = tpls[0].id
     previewOpen.value = true
   } catch (err) {
     toast(`生成失败：${(err as Error).message}`, 'error')
@@ -64,6 +70,25 @@ async function save() {
     toast(`保存失败：${(err as Error).message}`, 'error')
   } finally {
     saving.value = false
+  }
+}
+
+async function exportWithTemplate() {
+  if (!record.value || !selectedTemplateId.value) return
+  exporting.value = true
+  try {
+    const blob = await api.fillTemplate(selectedTemplateId.value, (record.value.data || {}) as Record<string, unknown>)
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${record.value.title.replace(/[\\/:*?"<>|]/g, '_')}-filled`
+    a.click()
+    URL.revokeObjectURL(url)
+    toast('已用模板生成文件')
+  } catch (err) {
+    toast((err as Error).message, 'error')
+  } finally {
+    exporting.value = false
   }
 }
 </script>
@@ -126,7 +151,15 @@ async function save() {
         <div class="modal" style="width: min(900px, 100%); max-height: 94vh;" role="dialog" aria-modal="true" aria-label="简历预览">
           <div class="modal-head">
             <h3>简历预览 · {{ record.title }}</h3>
-            <div style="display: flex; gap: 10px; align-items: center;">
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <template v-if="templates.length && record.data">
+                <select v-model="selectedTemplateId" class="tpl-select" :title="'选择模板'">
+                  <option v-for="t in templates" :key="t.id" :value="t.id">{{ t.name }}</option>
+                </select>
+                <button class="btn btn-holo btn-sm" type="button" :disabled="exporting" @click="exportWithTemplate">
+                  <AppIcon name="download" :size="15" /> {{ exporting ? '导出中…' : '模板导出' }}
+                </button>
+              </template>
               <button class="btn btn-ghost btn-sm" type="button" @click="printResume(record.html)"><AppIcon name="print" :size="15" /> 打印 / PDF</button>
               <button class="btn btn-ghost btn-sm" type="button" @click="previewOpen = false">关闭</button>
               <button class="btn btn-primary btn-sm" type="button" :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存到简历库' }}</button>
@@ -200,6 +233,11 @@ async function save() {
 .dim-tip { font-size: 11.5px; margin-top: 4px; }
 .diag-tips { margin-top: 16px; display: flex; flex-direction: column; gap: 7px; }
 .diag-tips li { list-style: none; font-size: 13px; color: var(--ink-dim); line-height: 1.6; }
+.tpl-select {
+  padding: 7px 10px; border-radius: 8px; font-size: 13px; max-width: 150px;
+  background: var(--input-bg); border: 1px solid var(--line); color: var(--ink); outline: none;
+}
+.tpl-select option { background: var(--option-bg); color: var(--ink); }
 @media (max-width: 640px) {
   .radar { display: none; }
   .diag-main { flex-direction: column; align-items: flex-start; }

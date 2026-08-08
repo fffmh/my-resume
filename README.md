@@ -62,6 +62,50 @@ Windows 也可直接双击 `start.bat` 启动。
 - 第二阶段部署 FastAPI 后端后，仅需改为 `export const api = new HttpAdapter()`（接口签名完全一致，`HttpAdapter` 已就绪），前端组件零改动。
 - 随后接入：真实 Word/PDF 解析、占位符模板填写、大模型润色与 docx/pdf 高质量导出。
 
+
+
+## 第二阶段：真实全功能版（本机运行 + 内网穿透）
+
+展示版（GitHub Pages）数据只存浏览器；**真实全功能版**在本机跑 FastAPI 后端，数据存本机 `data/`，支持真实 Word/PDF 模板填写与 DeepSeek 大模型润色。
+
+### 一键启动（推荐）
+
+双击 `start-backend.bat`（自动执行 `npm run build:backend` 并启动 `http://localhost:8000`）。
+
+或手动：
+
+```bash
+npm run build:backend
+python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
+```
+
+### 公网访问（免费内网穿透，二选一）
+
+- **cpolar**（推荐）：安装 https://www.cpolar.com 客户端并登录 → 在项目目录运行 `cpolar http 8000` → 复制输出的 `https://xxx.cpolar.cn` 地址。
+- **花生壳**：安装「花生壳」客户端 → 添加内网映射（主机 127.0.0.1、端口 8000）→ 获得公网域名。
+
+> 免费隧道带宽有限、地址可能变化，仅适合演示；长期公网建议云服务器 + Caddy HTTPS。
+
+### 启用 AI 润色
+
+网站「设置」页填写：Base URL `https://api.deepseek.com`、模型 `deepseek-chat`、API Key（https://platform.deepseek.com 注册充值）。生成简历时自动调用大模型润色；未配置或调用失败会自动降级为本地规则润色。
+
+### 真实模板填写
+
+1. 「模板管理」上传含占位符的 Word/PDF 模板，如 `姓名：{{姓名}}`、`{% for w in 工作经历 %}{{ w.position }} @ {{ w.company }}{% endfor %}`。
+2. 「生成简历」预览弹窗点「模板导出」，得到按模板填好的 `.docx` / `.pdf`（Word 用 docxtpl 版式零破坏，PDF 用 PyMuPDF 原位替换单行占位符）。
+
+### 数据与迁移
+
+- 数据存本机 `data/`（JSON 文件，schema 与展示版一致）；「设置」页可导出/导入 JSON 备份。
+- 展示版（GitHub Pages）与后端版互不影响：构建模式由 `VITE_BACKEND` 控制（`npm run build` 为展示版，`npm run build:backend` 为后端版）。
+
+### 后端测试
+
+```bash
+python -m pytest backend/tests -q   # 20 项
+```
+
 ## 技术栈
 
 Vue 3 · TypeScript · Vite · vue-router (hash) · IndexedDB · mammoth · pdfjs-dist · Vitest · GitHub Actions

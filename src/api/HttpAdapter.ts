@@ -9,6 +9,7 @@ import type {
   SectionEntry,
   TemplateInfo,
 } from './types'
+import type { ResumeData } from './merge'
 
 /**
  * 第二阶段适配器（就绪桩）：指向 FastAPI 后端 /api/*。
@@ -71,8 +72,25 @@ export class HttpAdapter implements IResumeAPI {
     return this.req('DELETE', `/api/templates/${id}`)
   }
 
-  generateResume(input: GenerateInput): Promise<GenerateResult> {
-    return this.req('POST', '/api/generate', input)
+  async fillTemplate(templateId: string, data: Record<string, unknown>): Promise<Blob> {
+    const res = await fetch(this.base + `/api/templates/${templateId}/fill`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data }),
+    })
+    if (!res.ok) throw new Error(`API POST /api/templates/${templateId}/fill -> ${res.status}`)
+    return res.blob()
+  }
+
+  async generateResume(input: GenerateInput): Promise<GenerateResult> {
+    const result = await this.req<GenerateResult>('POST', '/api/generate', input)
+    const record = result.record
+    if (record.data) {
+      const { renderResume } = await import('./resumeTemplates')
+      const { buildKeywords } = await import('./merge')
+      record.html = renderResume(record.style, record.data as unknown as ResumeData, buildKeywords(input.targetJob, input.jd))
+    }
+    return result
   }
 
   saveResume(record: ResumeRecord): Promise<void> {

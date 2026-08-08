@@ -54,6 +54,7 @@ export interface ResumeRecord {
   createdAt: string
   score?: number
   suggestions?: string[]
+  data?: Record<string, unknown>
 }
 
 export interface ResumeGroup {
@@ -99,6 +100,9 @@ export interface IResumeAPI {
   uploadTemplate(file: File): Promise<TemplateInfo>
   getTemplates(): Promise<TemplateInfo[]>
   deleteTemplate(id: string): Promise<void>
+
+  /** 用已上传模板生成 Word/PDF 文件（后端模式） */
+  fillTemplate(templateId: string, data: Record<string, unknown>): Promise<Blob>
 
   generateResume(input: GenerateInput): Promise<GenerateResult>
   saveResume(record: ResumeRecord): Promise<void>
