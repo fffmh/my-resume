@@ -109,6 +109,12 @@ export interface IResumeAPI {
   getResumes(): Promise<ResumeRecord[]>
   deleteResume(id: string): Promise<void>
 
+  /** 语义检索简历（后端模式为向量检索，本地模式为关键词+相似度兜底） */
+  searchResumes(query: string): Promise<ResumeRecord[]>
+
+  /** 简历分组（后端模式为向量语义分组，本地模式为 Jaccard 兜底） */
+  getResumeGroups(resumes: ResumeRecord[]): Promise<ResumeGroup[]>
+
   getSettings(): Promise<AppSettings>
   saveSettings(settings: AppSettings): Promise<void>
 

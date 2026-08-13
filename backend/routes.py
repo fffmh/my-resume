@@ -4,7 +4,7 @@ from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import Response
 from pydantic import BaseModel
 
-from . import classify, extract, fill, generate, store
+from . import classify, extract, fill, generate, retrieve, store, vector
 
 router = APIRouter()
 
@@ -165,7 +165,39 @@ def get_resumes():
 @router.delete('/resumes/{resume_id}')
 def delete_resume(resume_id: str):
     store.delete_resume(resume_id)
+    vector.remove_vec('resumes', resume_id)
     return {'ok': True}
+
+
+# ---------------- 向量检索（RAG） ----------------
+class SearchBody(BaseModel):
+    query: str = ''
+    scope: str = 'resumes'
+    top_k: int = 8
+
+
+@router.post('/search')
+def search(body: SearchBody):
+    q = body.query.strip()
+    top_k = max(1, min(50, body.top_k))
+    if not q:
+        raise HTTPException(400, '查询词不能为空')
+    if body.scope == 'entries':
+        return {'entries': retrieve.search_entries(q, top_k=top_k)}
+    if body.scope == 'knowledge':
+        return {'knowledge': retrieve.search_knowledge(q, top_k=top_k)}
+    return {'resumes': retrieve.search_resumes(q, top_k=top_k)}
+
+
+class GroupsBody(BaseModel):
+    resumes: list = []
+
+
+@router.post('/resumes/groups')
+def resume_groups(body: GroupsBody):
+    if not body.resumes:
+        return {'groups': []}
+    return {'groups': retrieve.group_resumes(body.resumes)}
 
 
 # ---------------- 设置 ----------------

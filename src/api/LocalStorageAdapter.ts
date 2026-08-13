@@ -12,6 +12,7 @@ import type {
   GenerateResult,
   IResumeAPI,
   ImportPreview,
+  ResumeGroup,
   ResumeRecord,
   SectionData,
   SectionEntry,
@@ -193,6 +194,30 @@ export class LocalStorageAdapter implements IResumeAPI {
 
   deleteResume(id: string): Promise<void> {
     return this.wait().then(() => deleteValue('resumes', id))
+  }
+
+  async searchResumes(query: string): Promise<ResumeRecord[]> {
+    await this.wait()
+    const resumes = await getAll<ResumeRecord>('resumes')
+    const q = query.trim().toLowerCase()
+    if (!q) return resumes
+    const { similarity } = await import('./similarity')
+    return resumes
+      .map((r) => {
+        const hay = [r.title, r.targetJob, r.styleName, r.text].join(' ').toLowerCase()
+        const lex = hay.includes(q) ? 0.8 : 0
+        const sim = similarity(r.text, query)
+        return { r, score: lex + sim }
+      })
+      .filter((x) => x.score > 0.01)
+      .sort((a, b) => b.score - a.score)
+      .map((x) => x.r)
+  }
+
+  async getResumeGroups(resumes: ResumeRecord[]): Promise<ResumeGroup[]> {
+    await this.wait()
+    const { groupResumes } = await import('./similarity')
+    return groupResumes(resumes)
   }
 
   async getSettings(): Promise<AppSettings> {

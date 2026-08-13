@@ -100,10 +100,19 @@ python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
 - 数据存本机 `data/`（JSON 文件，schema 与展示版一致）；「设置」页可导出/导入 JSON 备份。
 - 展示版（GitHub Pages）与后端版互不影响：构建模式由 `VITE_BACKEND` 控制（`npm run build` 为展示版，`npm run build:backend` 为后端版）。
 
+### 向量检索（RAG，后端模式）
+
+- **混合检索**：jieba BM25（词法）+ bge-small-zh-v1.5（稠密）→ RRF 融合排序，兼顾语义与精确关键词。
+- **简历库**：语义搜索 + 语义分组（按岗位与内容向量相似度聚类）。
+- **生成**：按 JD 语义筛选信息库素材（与词袋打分 6:4 融合）；润色前检索范文注入 DeepSeek prompt（真 RAG）。
+- **范文知识库**：内置 5 份岗位范文（backend/knowledge/）+ 自动索引你的历史简历（self-RAG，个人范文优先）。
+- **启用**：首次运行 `python backend/download_model.py`（约 100MB；HF 直连失败自动切 hf-mirror.com，网络慢可多试或挂代理）。
+- **降级**：模型未下载/下载失败自动降级为词法检索，功能不中断；向量与索引存 `data/chroma/`。
+
 ### 后端测试
 
 ```bash
-python -m pytest backend/tests -q   # 20 项
+python -m pytest backend/tests -q   # 32 项
 ```
 
 ## 技术栈

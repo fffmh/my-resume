@@ -4,6 +4,7 @@ import type {
   GenerateResult,
   IResumeAPI,
   ImportPreview,
+  ResumeGroup,
   ResumeRecord,
   SectionData,
   SectionEntry,
@@ -103,6 +104,16 @@ export class HttpAdapter implements IResumeAPI {
 
   deleteResume(id: string): Promise<void> {
     return this.req('DELETE', `/api/resumes/${id}`)
+  }
+
+  async searchResumes(query: string): Promise<ResumeRecord[]> {
+    const res = await this.req<{ resumes: ResumeRecord[] }>('POST', '/api/search', { query, scope: 'resumes', top_k: 12 })
+    return res.resumes
+  }
+
+  async getResumeGroups(resumes: ResumeRecord[]): Promise<ResumeGroup[]> {
+    const res = await this.req<{ groups: ResumeGroup[] }>('POST', '/api/resumes/groups', { resumes })
+    return res.groups
   }
 
   getSettings(): Promise<AppSettings> {

@@ -5,7 +5,7 @@ import re
 import time
 from datetime import datetime, timezone
 
-from . import store
+from . import embeddings, retrieve, store
 
 STYLE_NAMES = {
     'aurora': '极光 · 现代',
@@ -58,11 +58,24 @@ def _keep(sections_by_id, sid):
     return [dict(e) for e in (s['entries'] if s else [])]
 
 
-def _ranked(sections_by_id, sid, keywords):
+def _ranked(sections_by_id, sid, keywords, target_job, jd):
     s = sections_by_id.get(sid)
     if not s:
         return []
-    return sorted((dict(e) for e in s['entries']), key=lambda e: score_entry(e, keywords), reverse=True)
+    entries = [dict(e) for e in s['entries']]
+    if not entries:
+        return []
+    lex_map = {e['id']: score_entry(e, keywords) for e in entries}
+    max_lex = max(lex_map.values()) or 1
+    sem_map = {}
+    if embeddings.model_ready():
+        hits = retrieve.search_entries(f'{target_job} {jd}', top_k=30)
+        sem_map = {h['meta']['entryId']: h['score'] for h in hits if h['meta']['sectionId'] == sid}
+
+    def blend(e):
+        return 0.6 * sem_map.get(e['id'], 0.0) + 0.4 * (lex_map.get(e['id'], 0) / max_lex)
+
+    return sorted(entries, key=blend, reverse=True)
 
 
 def build_resume_data(sections, target_job, jd):
@@ -72,9 +85,9 @@ def build_resume_data(sections, target_job, jd):
         'basic': _first(by_id, 'basic'),
         'intention': _first(by_id, 'intention'),
         'education': _keep(by_id, 'education'),
-        'work': _ranked(by_id, 'work', keywords),
-        'project': _ranked(by_id, 'project', keywords),
-        'skills': _ranked(by_id, 'skills', keywords),
+        'work': _ranked(by_id, 'work', keywords, target_job, jd),
+        'project': _ranked(by_id, 'project', keywords, target_job, jd),
+        'skills': _ranked(by_id, 'skills', keywords, target_job, jd),
         'certificate': _keep(by_id, 'certificate'),
         'self': str(_first(by_id, 'self').get('content', '')),
         'targetJob': target_job,
@@ -184,7 +197,7 @@ def score_resume(sections, target_job, jd):
 
 
 # ---------------- 大模型润色 ----------------
-def optimize_with_llm(settings, target_job, jd, data):
+def optimize_with_llm(settings, target_job, jd, data, rag_chunks=None):
     llm = (settings or {}).get('llm') or {}
     api_key = llm.get('apiKey', '')
     if not api_key:
@@ -195,10 +208,18 @@ def optimize_with_llm(settings, target_job, jd, data):
         from openai import OpenAI
         client = OpenAI(base_url=base_url, api_key=api_key, timeout=60)
         sys_prompt = '你是资深 HR 简历顾问。你只基于用户给定的事实润色简历，绝不虚构、夸大或编造任何信息。'
+        rag_text = ''
+        if rag_chunks:
+            parts = []
+            for ch in rag_chunks:
+                src = '个人历史简历' if ch['meta'].get('source') == 'personal' else '通用范文'
+                parts.append(f'【参考{src}：{ch["meta"].get("title", "")}】\n{ch["text"]}')
+            rag_text = '\n\n以下为可参考的范文片段（仅参考结构与措辞，严禁照抄或虚构本人经历）：\n' + '\n\n'.join(parts) + '\n\n'
         user_prompt = (
             f'目标岗位：{target_job}\n'
             f'岗位要求：{jd or "（无）"}\n\n'
             f'原始素材 JSON：\n{json.dumps(data, ensure_ascii=False)}\n\n'
+            f'{rag_text}'
             '请输出一份润色后的简历数据，仅输出 JSON，字段结构与输入一致。要求：'
             '工作/项目要点使用动作动词开头、突出量化成果、对齐岗位关键词；自我评价精炼有力；技能按与岗位相关度排序。'
             'JSON 格式：{"basic":{...},"intention":{...},"education":[...],"work":[...],"project":[...],"skills":[...],"certificate":[...],"self":"..."}'
@@ -248,7 +269,8 @@ def _merge_llm(data, llm_data):
 
 def generate(settings, sections, target_job, jd, style):
     data = build_resume_data(sections, target_job, jd)
-    llm_data = optimize_with_llm(settings, target_job, jd, data)
+    rag_chunks = retrieve.search_knowledge(f'{target_job} {jd}', top_k=3) if embeddings.model_ready() else []
+    llm_data = optimize_with_llm(settings, target_job, jd, data, rag_chunks)
     used_llm = llm_data is not None
     if used_llm:
         data = _merge_llm(data, llm_data)
@@ -266,6 +288,7 @@ def generate(settings, sections, target_job, jd, style):
         'suggestions': score['suggestions'],
         'createdAt': datetime.now(timezone.utc).isoformat(),
         'usedLlm': used_llm,
+        'usedRag': bool(rag_chunks) and used_llm,
     }
 
 
