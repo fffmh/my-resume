@@ -1,0 +1,9 @@
+# 把 resume.yourdomain.com 换成你的域名（DNS 已解析到本服务器 IP）
+resume.yourdomain.com {
+    reverse_proxy 127.0.0.1:8000
+}
+
+# 没有域名时：用下面这行代替上面（仅 HTTP，无 HTTPS）
+# :80 {
+#     reverse_proxy 127.0.0.1:8000
+# }

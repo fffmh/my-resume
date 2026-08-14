@@ -1,0 +1,16 @@
+[Unit]
+Description=Resume Gallery Backend (FastAPI)
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/resume
+ExecStart=/opt/resume/venv/bin/python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
+Restart=always
+RestartSec=3
+# 国内服务器默认走 hf-mirror 下载/使用语义模型
+Environment=HF_ENDPOINT=https://hf-mirror.com
+
+[Install]
+WantedBy=multi-user.target
