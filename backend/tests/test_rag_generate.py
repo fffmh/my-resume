@@ -33,6 +33,7 @@ def test_generate_rag_injects_knowledge(monkeypatch):
         captured['rag'] = rag_chunks
         return {'basic': {'name': '张三'}, 'work': [{'id': 'w1', 'content': '负责 主导'}], 'self': '靠谱'}
 
+    monkeypatch.setattr(generate, 'score_resume_llm', lambda *a, **k: None)
     monkeypatch.setattr(generate, 'optimize_with_llm', fake_llm)
     record = generate.generate(settings, sections, '前端开发工程师', 'Vue 性能优化', 'aurora')
     assert record['usedRag'] is True

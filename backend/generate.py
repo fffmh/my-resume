@@ -198,6 +198,75 @@ def score_resume(sections, target_job, jd):
 
 # ---------------- 大模型润色 ----------------
 def optimize_with_llm(settings, target_job, jd, data, rag_chunks=None):
+    """DeepSeek 润色：few-shot + 四层指令 + 结构化 JSON 输出；失败自动重试 1 次后返回 None（规则兜底）。"""
+    llm = (settings or {}).get('llm') or {}
+    api_key = llm.get('apiKey', '')
+    if not api_key:
+        return None
+    base_url = llm.get('baseUrl') or 'https://api.deepseek.com'
+    model = llm.get('model') or 'deepseek-chat'
+
+    rag_text = ''
+    if rag_chunks:
+        parts = []
+        for ch in rag_chunks:
+            src = '个人历史简历' if ch['meta'].get('source') == 'personal' else '通用范文'
+            parts.append(f'【参考{src}：{ch["meta"].get("title", "")}】\n{ch["text"]}')
+        rag_text = '\n\n以下为可参考的范文片段（仅参考结构与措辞，严禁照抄或虚构本人经历）：\n' + '\n\n'.join(parts) + '\n\n'
+
+    few_shot = (
+        '【润色示例】\n'
+        '原文：负责公司前端项目，做了很多性能优化。\n'
+        '润色后：主导招聘平台前端架构与核心链路开发，搭建 Vue3 + TypeScript 统一组件库（40+ 组件，业务接入率 72%）；'
+        '通过缓存、懒加载与代码分割将首屏从 3.2s 优化至 1.1s（-66%）。\n'
+    )
+
+    system_prompt = (
+        '你是资深 HR 简历顾问。你只基于用户给定的事实润色简历，绝不虚构、夸大或编造任何信息'
+        '（公司、职位、数字、项目均不得新增）。改写遵循四层原则：'
+        '1) 完整保留事实；2) 优化措辞（要点用动作动词开头，去掉口语与空话）；'
+        '3) 补强量化表达（把可量化的点明确成数字，数字必须来自原文或可合理推断）；'
+        '4) 对齐岗位关键词（把 JD 中的关键词自然地融入经历与技能）。'
+        '要点化输出，单条 20-40 字。'
+    )
+    user_prompt = (
+        f'目标岗位：{target_job}\n'
+        f'岗位要求：{jd or "（无）"}\n\n'
+        f'原始素材 JSON：\n{json.dumps(data, ensure_ascii=False)}\n\n'
+        f'{few_shot}'
+        f'{rag_text}'
+        '请输出一份润色后的简历数据，仅输出 JSON（不要任何解释文字），字段结构与输入一致。'
+        '工作/项目经历每条记录的 content 保持多行字符串（用 \n 分隔各条要点）。'
+        'JSON 格式：{"basic":{...},"intention":{...},"education":[...],"work":[...],"project":[...],"skills":[...],"certificate":[...],"self":"..."}'
+    )
+
+    for _attempt in range(2):
+        try:
+            from openai import OpenAI
+            client = OpenAI(base_url=base_url, api_key=api_key, timeout=60)
+            resp = client.chat.completions.create(
+                model=model,
+                messages=[{'role': 'system', 'content': system_prompt}, {'role': 'user', 'content': user_prompt}],
+                temperature=0.5,
+                max_tokens=4000,
+                response_format={'type': 'json_object'},
+            )
+            raw = (resp.choices[0].message.content or '').strip()
+            start_idx = raw.find('{')
+            end_idx = raw.rfind('}')
+            if start_idx < 0 or end_idx <= start_idx:
+                continue
+            parsed = json.loads(raw[start_idx:end_idx + 1])
+            if not isinstance(parsed, dict) or 'work' not in parsed:
+                continue
+            return parsed
+        except Exception:
+            continue
+    return None
+
+
+def score_resume_llm(settings, target_job, jd, sections):
+    """HR 评分卡：让大模型按 5 维打分（各 20 分），失败返回 None（退回纯规则分）。"""
     llm = (settings or {}).get('llm') or {}
     api_key = llm.get('apiKey', '')
     if not api_key:
@@ -205,40 +274,48 @@ def optimize_with_llm(settings, target_job, jd, data, rag_chunks=None):
     base_url = llm.get('baseUrl') or 'https://api.deepseek.com'
     model = llm.get('model') or 'deepseek-chat'
     try:
-        from openai import OpenAI
-        client = OpenAI(base_url=base_url, api_key=api_key, timeout=60)
-        sys_prompt = '你是资深 HR 简历顾问。你只基于用户给定的事实润色简历，绝不虚构、夸大或编造任何信息。'
-        rag_text = ''
-        if rag_chunks:
-            parts = []
-            for ch in rag_chunks:
-                src = '个人历史简历' if ch['meta'].get('source') == 'personal' else '通用范文'
-                parts.append(f'【参考{src}：{ch["meta"].get("title", "")}】\n{ch["text"]}')
-            rag_text = '\n\n以下为可参考的范文片段（仅参考结构与措辞，严禁照抄或虚构本人经历）：\n' + '\n\n'.join(parts) + '\n\n'
+        data = build_resume_data(sections, target_job, jd)
+        system_prompt = (
+            '你是资深 HR。请按 HR 评分卡给候选人简历打分，只基于简历内容，不虚构、不脑补。'
+            '五个维度各 20 分：岗位匹配度、可量化成果、结构完整度、语言质量、专业表达。'
+        )
         user_prompt = (
             f'目标岗位：{target_job}\n'
             f'岗位要求：{jd or "（无）"}\n\n'
-            f'原始素材 JSON：\n{json.dumps(data, ensure_ascii=False)}\n\n'
-            f'{rag_text}'
-            '请输出一份润色后的简历数据，仅输出 JSON，字段结构与输入一致。要求：'
-            '工作/项目要点使用动作动词开头、突出量化成果、对齐岗位关键词；自我评价精炼有力；技能按与岗位相关度排序。'
-            'JSON 格式：{"basic":{...},"intention":{...},"education":[...],"work":[...],"project":[...],"skills":[...],"certificate":[...],"self":"..."}'
+            f'简历内容（JSON）：\n{json.dumps(data, ensure_ascii=False)}\n\n'
+            '输出 JSON（不要解释文字）：'
+            '{"total":0-100,"dims":[{"name":"岗位匹配","score":0-20,"tip":"扣分原因/改进建议"},'
+            '{"name":"可量化成果","score":0-20,"tip":"..."},{"name":"结构完整","score":0-20,"tip":"..."},'
+            '{"name":"语言质量","score":0-20,"tip":"..."},{"name":"专业表达","score":0-20,"tip":"..."}],'
+            '"comment":"一句话总评"}'
         )
+        from openai import OpenAI
+        client = OpenAI(base_url=base_url, api_key=api_key, timeout=60)
         resp = client.chat.completions.create(
             model=model,
-            messages=[{'role': 'system', 'content': sys_prompt}, {'role': 'user', 'content': user_prompt}],
-            temperature=0.6,
-            max_tokens=4000,
+            messages=[{'role': 'system', 'content': system_prompt}, {'role': 'user', 'content': user_prompt}],
+            temperature=0.3,
+            max_tokens=1200,
+            response_format={'type': 'json_object'},
         )
         raw = (resp.choices[0].message.content or '').strip()
-        start = raw.find('{')
-        end = raw.rfind('}')
-        if start < 0 or end <= start:
+        s = raw.find('{')
+        e = raw.rfind('}')
+        if s < 0 or e <= s:
             return None
-        parsed = json.loads(raw[start:end + 1])
-        if not isinstance(parsed, dict) or 'work' not in parsed:
-            return None
-        return parsed
+        parsed = json.loads(raw[s:e + 1])
+        total = max(0, min(100, int(parsed.get('total', 0))))
+        dims = parsed.get('dims') or []
+        suggestions = []
+        for d in dims:
+            if isinstance(d, dict) and d.get('score', 20) < 12 and d.get('tip'):
+                suggestions.append(f"{d.get('name', '维度')}：{d['tip']}")
+        return {
+            'total': total,
+            'dims': dims,
+            'suggestions': suggestions[:4],
+            'comment': str(parsed.get('comment', '')).strip(),
+        }
     except Exception:
         return None
 
@@ -276,6 +353,16 @@ def generate(settings, sections, target_job, jd, style):
         data = _merge_llm(data, llm_data)
     text = render_text(data)
     score = score_resume(sections, target_job, jd)
+    llm_score = score_resume_llm(settings, target_job, jd, sections)
+    if llm_score:
+        suggestions = score['suggestions'] + [f'AI 建议：{s}' for s in llm_score['suggestions']]
+        if llm_score.get('comment'):
+            suggestions.append(f"AI 评审：{llm_score['comment']}")
+        score = {
+            **score,
+            'total': round(0.4 * score['total'] + 0.6 * llm_score['total']),
+            'suggestions': list(dict.fromkeys(suggestions))[:8],
+        }
     return {
         'id': store.gen_id(),
         'title': f'{target_job} · 简历',

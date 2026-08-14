@@ -35,6 +35,7 @@ def test_llm_path(monkeypatch):
         'work': [{'position': '前端', 'content': '负责 主导 优化'}],
         'self': '我很强，很靠谱',
     }
+    monkeypatch.setattr(generate, 'score_resume_llm', lambda *a, **k: None)
     monkeypatch.setattr(generate, 'optimize_with_llm', lambda *a, **k: fake)
     settings = {'llm': {'apiKey': 'sk-x', 'baseUrl': '', 'model': ''}}
     record = generate.generate(settings, _sections(), '前端开发工程师', '', 'aurora')
