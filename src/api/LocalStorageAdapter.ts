@@ -104,10 +104,21 @@ export class LocalStorageAdapter implements IResumeAPI {
     const { extractText } = await import('./extract')
     const result = await extractText(file)
     if (result.error) {
-      return { fileName: file.name, sections: {}, warnings: [result.error] }
+      return { fileName: file.name, sections: {}, warnings: [result.error], confidence: {} }
     }
+    const sections = await getAll<SectionData>('sections')
     const classified = classifyText(result.text)
-    return { fileName: file.name, sections: classified.sections, warnings: classified.warnings }
+    const confidence: ImportPreview['confidence'] = {}
+    for (const [sid, entries] of Object.entries(classified.sections)) {
+      const def = sections.find((s) => s.id === sid)
+      const keys = (def?.fields ?? []).map((f) => f.key)
+      confidence[sid] = entries.map((e) => {
+        const filled = keys.filter((k) => String(e[k] ?? '').trim()).length
+        const ratio = keys.length ? filled / keys.length : 0
+        return { level: ratio >= 0.6 ? '高' : ratio >= 0.3 ? '中' : '低', reason: '' }
+      })
+    }
+    return { fileName: file.name, sections: classified.sections, warnings: classified.warnings, confidence }
   }
 
   async confirmImport(preview: ImportPreview): Promise<void> {

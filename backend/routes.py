@@ -4,7 +4,7 @@ from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import Response
 from pydantic import BaseModel
 
-from . import classify, extract, fill, generate, retrieve, store, vector
+from . import classify, extract, fill, generate, import_llm, retrieve, store, vector
 
 router = APIRouter()
 
@@ -50,9 +50,24 @@ async def import_file(file: UploadFile = File(...)):
     data = await file.read()
     text, err = extract.extract_text(file.filename or '', data)
     if err:
-        return {'fileName': file.filename or '', 'sections': {}, 'warnings': [err]}
-    sections, warnings = classify.classify_text(text)
-    return {'fileName': file.filename or '', 'sections': sections, 'warnings': warnings}
+        return {'fileName': file.filename or '', 'sections': {}, 'warnings': [err], 'confidence': {}}
+    rule_sections, warnings = classify.classify_text(text)
+    settings = store.get_settings()
+    llm_result = import_llm.import_classify_llm(settings, text)
+    if llm_result:
+        sections = dict(rule_sections)
+        sections.update(llm_result['sections'])
+        confidence = import_llm.rule_confidence(rule_sections)
+        confidence.update(llm_result['confidence'])
+        if not warnings:
+            warnings = ['已使用 AI 结构化抽取，识别结果置信度已标注']
+        return {'fileName': file.filename or '', 'sections': sections, 'warnings': warnings, 'confidence': confidence}
+    return {
+        'fileName': file.filename or '',
+        'sections': rule_sections,
+        'warnings': warnings,
+        'confidence': import_llm.rule_confidence(rule_sections),
+    }
 
 
 @router.post('/import/confirm')

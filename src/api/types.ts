@@ -31,6 +31,8 @@ export interface ImportPreview {
   fileName: string
   sections: Record<string, SectionEntry[]>
   warnings: string[]
+  /** 每条识别结果的置信度（与 sections 一一对应，后端/LLM 提供） */
+  confidence?: Record<string, Array<{ level: string; reason?: string }>>
 }
 
 export interface TemplateInfo {

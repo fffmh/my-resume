@@ -52,3 +52,41 @@ def test_fill_pdf():
         doc.close()
     assert '李四' in text
     assert '{{' not in text
+
+
+def test_fill_pdf_form_field():
+    pdf = fitz.open()
+    page = pdf.new_page()
+    widget = fitz.Widget()
+    widget.rect = fitz.Rect(72, 72, 320, 92)
+    widget.field_name = '姓名'
+    widget.field_type = fitz.PDF_WIDGET_TYPE_TEXT
+    widget.field_value = ''
+    page.add_widget(widget)
+    buf = io.BytesIO(pdf.tobytes())
+    pdf.close()
+    out = fill.fill_pdf(buf.getvalue(), {'basic': {'name': '王五'}})
+    doc = fitz.open(stream=out, filetype='pdf')
+    try:
+        widgets = list(doc[0].widgets())
+        assert widgets and widgets[0].field_value == '王五'
+    finally:
+        doc.close()
+
+
+def test_fill_pdf_multiline():
+    pdf = fitz.open()
+    page = pdf.new_page()
+    page.insert_text((72, 72), '{{自我评价}}', fontname='china-s', fontsize=12)
+    buf = io.BytesIO(pdf.tobytes())
+    pdf.close()
+    value = '第一行：专注工程化。\n第二行：习惯用数据衡量结果。'
+    out = fill.fill_pdf(buf.getvalue(), {'self': value})
+    doc = fitz.open(stream=out, filetype='pdf')
+    try:
+        text = doc[0].get_text()
+    finally:
+        doc.close()
+    assert '第一行' in text
+    assert '第二行' in text
+    assert '{{' not in text

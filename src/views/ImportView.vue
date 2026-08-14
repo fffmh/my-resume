@@ -124,7 +124,23 @@ async function confirm() {
           <AppIcon name="folder" :size="16" /> {{ sectionName(sectionId) }}
           <span class="chip">{{ entries.length }} 条</span>
         </div>
-        <div v-for="(entry, eIndex) in entries" :key="eIndex" class="glass entry-box">
+        <div
+          v-for="(entry, eIndex) in entries"
+          :key="eIndex"
+          class="glass entry-box"
+          :class="{ 'low-conf': preview.confidence?.[sectionId]?.[eIndex]?.level === '低' }"
+        >
+          <div class="entry-head">
+            <span
+              v-if="preview.confidence?.[sectionId]?.[eIndex]"
+              class="conf-chip"
+              :class="'conf-' + preview.confidence[sectionId][eIndex].level"
+              :title="preview.confidence[sectionId][eIndex].reason || ''"
+            >
+              识别置信度：{{ preview.confidence[sectionId][eIndex].level }}
+              <em v-if="preview.confidence[sectionId][eIndex].reason">（{{ preview.confidence[sectionId][eIndex].reason }}）</em>
+            </span>
+          </div>
           <div class="form-grid">
             <div
               v-for="field in sectionDef(sectionId)?.fields ?? []"
@@ -173,5 +189,12 @@ async function confirm() {
 .entry-box { padding: 18px; margin-bottom: 12px; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
 .field-wide { grid-column: 1 / -1; }
+.entry-head { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+.conf-chip { font-size: 11.5px; padding: 3px 9px; border-radius: 4px; border: 1px solid; font-style: normal; }
+.conf-chip em { font-style: normal; opacity: 0.8; }
+.conf-高 { color: var(--ok); border-color: rgba(61,220,151,.4); background: rgba(61,220,151,.08); }
+.conf-中 { color: #e6b84f; border-color: rgba(230,184,79,.4); background: rgba(230,184,79,.08); }
+.conf-低 { color: var(--danger); border-color: rgba(255,107,139,.5); background: rgba(255,107,139,.1); }
+.entry-box.low-conf { border-color: rgba(255,107,139,.55); box-shadow: 0 0 18px rgba(255,107,139,.12); }
 @media (max-width: 640px) { .form-grid { grid-template-columns: 1fr; } }
 </style>
