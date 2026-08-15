@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """导入增强：LLM 结构化抽取（DeepSeek）+ 规则置信度分级。"""
 import json
+import re
 
 from .classify import gen_id
 from . import store
@@ -85,6 +86,10 @@ def import_classify_llm(settings, text):
                 if not isinstance(it, dict):
                     continue
                 row = {k: str(v) for k, v in it.items() if k in keys and v is not None}
+                if sid == 'basic' and 'phone' in row:
+                    digits = re.sub(r'[\s-]', '', row['phone'])
+                    if re.fullmatch(r'1[3-9]\d{9}|0\d{2,3}\d{7,8}', digits):
+                        row['phone'] = digits
                 row['id'] = gen_id()
                 good.append(row)
             if not good:
