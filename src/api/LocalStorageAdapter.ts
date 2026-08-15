@@ -174,6 +174,10 @@ export class LocalStorageAdapter implements IResumeAPI {
     return Promise.reject(new Error('真实模板填写需在「后端模式」下使用（运行 start-backend.bat 后访问 http://localhost:8000）'))
   }
 
+  exportBuiltinDocx(_input: GenerateInput): Promise<Blob> {
+    return Promise.reject(new Error('内置模板导出 Word 需在「后端模式」下使用（运行 start-backend.bat 后访问 http://localhost:8000）'))
+  }
+
   async generateResume(input: GenerateInput): Promise<GenerateResult> {
     await this.wait()
     const sections = await getAll<SectionData>('sections')

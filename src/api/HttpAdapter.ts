@@ -73,6 +73,16 @@ export class HttpAdapter implements IResumeAPI {
     return this.req('DELETE', `/api/templates/${id}`)
   }
 
+  async exportBuiltinDocx(input: GenerateInput): Promise<Blob> {
+    const res = await fetch(this.base + '/api/export/docx', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    })
+    if (!res.ok) throw new Error(`API POST /api/export/docx -> ${res.status}`)
+    return res.blob()
+  }
+
   async fillTemplate(templateId: string, data: Record<string, unknown>): Promise<Blob> {
     const res = await fetch(this.base + `/api/templates/${templateId}/fill`, {
       method: 'POST',

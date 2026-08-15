@@ -106,6 +106,9 @@ export interface IResumeAPI {
   /** 用已上传模板生成 Word/PDF 文件（后端模式） */
   fillTemplate(templateId: string, data: Record<string, unknown>): Promise<Blob>
 
+  /** 用内置模板直接导出 Word（后端模式） */
+  exportBuiltinDocx(input: GenerateInput): Promise<Blob>
+
   generateResume(input: GenerateInput): Promise<GenerateResult>
   saveResume(record: ResumeRecord): Promise<void>
   getResumes(): Promise<ResumeRecord[]>

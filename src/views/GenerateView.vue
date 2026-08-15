@@ -73,6 +73,25 @@ async function save() {
   }
 }
 
+async function exportBuiltinDocx() {
+  if (!targetJob.value.trim()) return
+  exporting.value = true
+  try {
+    const blob = await api.exportBuiltinDocx({ targetJob: targetJob.value.trim(), jd: jd.value, style: style.value })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${targetJob.value.trim().replace(/[\\/:*?"<>|]/g, '_')}-简历.docx`
+    a.click()
+    URL.revokeObjectURL(url)
+    toast('已导出内置模板 Word')
+  } catch (err) {
+    toast((err as Error).message, 'error')
+  } finally {
+    exporting.value = false
+  }
+}
+
 async function exportWithTemplate() {
   if (!record.value || !selectedTemplateId.value) return
   exporting.value = true
@@ -152,13 +171,18 @@ async function exportWithTemplate() {
           <div class="modal-head">
             <h3>简历预览 · {{ record.title }}</h3>
             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-              <template v-if="templates.length && record.data">
-                <select v-model="selectedTemplateId" class="tpl-select" :title="'选择模板'">
-                  <option v-for="t in templates" :key="t.id" :value="t.id">{{ t.name }}</option>
-                </select>
-                <button class="btn btn-holo btn-sm" type="button" :disabled="exporting" @click="exportWithTemplate">
-                  <AppIcon name="download" :size="15" /> {{ exporting ? '导出中…' : '模板导出' }}
+              <template v-if="record.data">
+                <button class="btn btn-holo btn-sm" type="button" :disabled="exporting" @click="exportBuiltinDocx">
+                  <AppIcon name="download" :size="15" /> {{ exporting ? '导出中…' : '内置模板·导出Word' }}
                 </button>
+                <template v-if="templates.length">
+                  <select v-model="selectedTemplateId" class="tpl-select" :title="'选择模板'">
+                    <option v-for="t in templates" :key="t.id" :value="t.id">{{ t.name }}</option>
+                  </select>
+                  <button class="btn btn-holo btn-sm" type="button" :disabled="exporting" @click="exportWithTemplate">
+                    <AppIcon name="download" :size="15" /> {{ exporting ? '导出中…' : '模板导出' }}
+                  </button>
+                </template>
               </template>
               <button class="btn btn-ghost btn-sm" type="button" @click="printResume(record.html)"><AppIcon name="print" :size="15" /> 打印 / PDF</button>
               <button class="btn btn-ghost btn-sm" type="button" @click="previewOpen = false">关闭</button>

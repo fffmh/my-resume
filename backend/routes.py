@@ -4,7 +4,7 @@ from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import Response
 from pydantic import BaseModel
 
-from . import classify, extract, fill, generate, import_llm, retrieve, store, vector
+from . import classify, docx_export, extract, fill, generate, import_llm, retrieve, store, vector
 
 router = APIRouter()
 
@@ -213,6 +213,26 @@ def resume_groups(body: GroupsBody):
     if not body.resumes:
         return {'groups': []}
     return {'groups': retrieve.group_resumes(body.resumes)}
+
+
+# ---------------- 内置模板导出 ----------------
+class ExportDocxBody(BaseModel):
+    targetJob: str = ''
+    jd: str = ''
+    style: str = 'aurora'
+
+
+@router.post('/export/docx')
+def export_docx(body: ExportDocxBody):
+    sections = store.list_sections()
+    data = generate.build_resume_data(sections, body.targetJob.strip(), body.jd)
+    out = docx_export.build_docx(data)
+    filename = f"{(body.targetJob.strip() or 'resume')}-简历.docx"
+    return Response(
+        content=out,
+        media_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        headers={'Content-Disposition': f'attachment; filename="{filename}"'},
+    )
 
 
 # ---------------- 设置 ----------------

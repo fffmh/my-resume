@@ -10,7 +10,8 @@ from pathlib import Path
 from .presets import DEFAULT_SECTIONS
 
 ROOT = Path(__file__).resolve().parent.parent
-DATA_DIR = ROOT / 'data'
+# 支持环境变量覆盖数据目录（E2E 测试隔离用）
+DATA_DIR = Path(os.environ.get('RESUME_DATA_DIR', str(ROOT / 'data')))
 INFO_DIR = DATA_DIR / 'info'
 INFO_INDEX = INFO_DIR / 'index.json'
 TEMPLATES_DIR = DATA_DIR / 'templates'

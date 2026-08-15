@@ -3,7 +3,6 @@
 from pathlib import Path
 
 from fastapi import FastAPI
-from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from . import store
@@ -19,18 +18,11 @@ app.include_router(api_router, prefix='/api')
 # 首次启动播种 8 个信息库
 store.seed_sections()
 
-# 托管前端构建产物（npm run build:backend 生成）
+# 托管前端构建产物（npm run build:backend 生成）。
+# 项目使用 hash 路由，服务器只需要 '/'、'/assets/*'、'/sw.js'、'/manifest.webmanifest'、'/icons/*'，
+# 因此直接以 StaticFiles(html=True) 挂根路径即可（api 路由在前，优先匹配）。
 if DIST.exists() and (DIST / 'index.html').exists():
-    app.mount('/assets', StaticFiles(directory=DIST / 'assets'), name='assets')
-
-    @app.get('/{full_path:path}', include_in_schema=False)
-    async def spa(full_path: str):
-        if full_path.startswith('api/'):
-            return JSONResponse({'detail': 'Not Found'}, status_code=404)
-        index = DIST / 'index.html'
-        if index.exists():
-            return FileResponse(index)
-        return JSONResponse({'detail': 'frontend not built'}, status_code=404)
+    app.mount('/', StaticFiles(directory=DIST, html=True), name='static')
 
 
 if __name__ == '__main__':
