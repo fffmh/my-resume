@@ -28,3 +28,5 @@ resume-deploy.tar.gz
 verify_out.txt
 
 e2e.log
+
+.pytest-tmp
