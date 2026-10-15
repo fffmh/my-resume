@@ -1,6 +1,7 @@
 # 流光简历 · Resume Gallery
 
 > 🌐 云服务器长期部署（域名 + HTTPS）请见 [DEPLOY.md](DEPLOY.md)
+> 🔄 项目交接/接手说明（给下一个对话或同事）请见 [HANDOFF.md](HANDOFF.md)
 
 一个类 Boss直聘/猎聘 风格的简历工作台（**第一阶段：纯前端展示版**）。
 
