@@ -1,5 +1,12 @@
 # 流光简历 · Resume Gallery
 
+[![Tests](https://github.com/FFFMH/my-resume/actions/workflows/test.yml/badge.svg)](https://github.com/FFFMH/my-resume/actions/workflows/test.yml)
+[![Deploy](https://github.com/FFFMH/my-resume/actions/workflows/deploy.yml/badge.svg)](https://github.com/FFFMH/my-resume/actions/workflows/deploy.yml)
+![Vue](https://img.shields.io/badge/Vue-3-42b883?logo=vue.js&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?logo=typescript&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-backend-009688?logo=fastapi&logoColor=white)
+![Tests](https://img.shields.io/badge/tests-24%20frontend%20%C2%B7%2046%20backend%20%C2%B7%205%20e2e-brightgreen)
+
 > 🌐 云服务器长期部署（域名 + HTTPS）请见 [DEPLOY.md](DEPLOY.md)
 > 🔄 项目交接/接手说明（给下一个对话或同事）请见 [HANDOFF.md](HANDOFF.md)
 
