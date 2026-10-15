@@ -14,6 +14,7 @@
 |---|---|
 | 功能完成度 | 阶段一（纯前端展示版）+ 阶段二（FastAPI 后端/真实模板/AI/RAG）全部完成 |
 | 自动化测试 | 前端 Vitest **24** 项 · 后端 pytest **46** 项 · Playwright E2E **5** 项（全绿） |
+| CI | GitHub Actions `Tests` 工作流（前端 typecheck+vitest / 后端 pytest），push 自动跑，README 徽章显示 passing |
 | 类型/构建 | `vue-tsc` 通过；`npm run build`（Pages 版）与 `npm run build:backend`（后端版）均通过 |
 | 线上展示版 | https://FFFMH.github.io/my-resume/ （GitHub Pages，数据存访客浏览器） |
 | 全功能版 | 本机运行 `http://localhost:8000`（桌面快捷方式「流光简历·后端」） |
@@ -65,6 +66,8 @@ flowchart LR
 ## 5. 快速上手命令
 
 ```bash
+# CI 说明：push 到 main 会自动跑 .github/workflows/test.yml（前端 24 + 后端 46）
+
 # 前端开发（展示版模式，数据在浏览器）
 npm install && npm run dev            # http://localhost:5173
 
@@ -130,7 +133,7 @@ deploy\cpolar\app\cpolar\cpolar.exe http 8000 -config=deploy\cpolar\cpolar.yml
 | 产品 | 单用户无登录、数据存本机 | 若要多人用：加账号体系 + 数据库（见下） |
 | 产品 | 免费隧道带宽有限、非 7×24 | 上云（Oracle 免费 ARM / 轻量服务器） |
 | 测试 | E2E 依赖本机 Edge（`channel: 'msedge'`） | CI 中应改为 `npx playwright install chromium` |
-| 待补（作品集向） | 测试 CI + 徽章、LICENSE、README 架构图/截图/GIF、面试话术包 | 见"下一步建议" |
+| 待补（作品集向） | LICENSE、README 架构图/截图/GIF、面试话术包（CI + 徽章已完成） | 见"下一步建议" |
 
 ## 11. 给下一个对话的接手指引
 1. **先读**：本文件 → `README.md` → `DEPLOY.md`（三步即可掌握全貌）
@@ -144,6 +147,9 @@ deploy\cpolar\app\cpolar\cpolar.exe http 8000 -config=deploy\cpolar\cpolar.yml
 
 ## 12. 最近提交
 ```
+1dc69e9 ci: 新增测试工作流(前端typecheck+vitest / 后端pytest) + 测试依赖清单 + README徽章
+178b62c chore: 清理调试日志文件
+06c196a docs: 新增项目交接文档 HANDOFF.md（给下一个对话/接手者）
 3c8e67d chore: 忽略 pytest 工作区临时目录
 6b93f77 security: 访问口令持久化到服务端配置(任何启动方式均受保护) + health 状态修正
 d16f6a2 chore: 移除误提交的第三方二进制与部署包（改为本地保留+忽略）
