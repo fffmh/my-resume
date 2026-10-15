@@ -12,6 +12,32 @@ import type {
 } from './types'
 import type { ResumeData } from './merge'
 
+/** 访问口令（后端开启 RESUME_ACCESS_TOKEN 时需要；仅保存在本浏览器） */
+const TOKEN_KEY = 'resume-access-token'
+
+function getAccessToken(): string {
+  try {
+    return localStorage.getItem(TOKEN_KEY) || ''
+  } catch {
+    return ''
+  }
+}
+
+function setAccessToken(token: string): void {
+  try {
+    localStorage.setItem(TOKEN_KEY, token)
+  } catch {
+    /* 忽略存储异常 */
+  }
+}
+
+function askForAccessToken(): string {
+  const input = window.prompt('该站点已开启访问保护，请输入访问口令：')
+  const token = (input || '').trim()
+  if (token) setAccessToken(token)
+  return token
+}
+
 /**
  * 第二阶段适配器（就绪桩）：指向 FastAPI 后端 /api/*。
  * 后端上线后，只需在 adapter.ts 把实现切换为 new HttpAdapter()。
@@ -19,12 +45,29 @@ import type { ResumeData } from './merge'
 export class HttpAdapter implements IResumeAPI {
   private base = ''
 
+  /** 统一请求：自动附带访问口令，遇到 401 提示输入并重试一次 */
+  private async send(method: string, url: string, body?: unknown): Promise<Response> {
+    const doFetch = () => {
+      const headers: Record<string, string> = {}
+      if (!(body instanceof FormData) && body !== undefined) headers['Content-Type'] = 'application/json'
+      const token = getAccessToken()
+      if (token) headers['X-Access-Token'] = token
+      return fetch(this.base + url, {
+        method,
+        headers,
+        body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined,
+      })
+    }
+    let res = await doFetch()
+    if (res.status === 401) {
+      const token = askForAccessToken()
+      if (token) res = await doFetch()
+    }
+    return res
+  }
+
   private async req<T>(method: string, url: string, body?: unknown): Promise<T> {
-    const res = await fetch(this.base + url, {
-      method,
-      headers: body instanceof FormData ? undefined : { 'Content-Type': 'application/json' },
-      body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined,
-    })
+    const res = await this.send(method, url, body)
     if (!res.ok) throw new Error(`API ${method} ${url} -> ${res.status}`)
     return (await res.json()) as T
   }
@@ -74,21 +117,13 @@ export class HttpAdapter implements IResumeAPI {
   }
 
   async exportBuiltinDocx(input: GenerateInput): Promise<Blob> {
-    const res = await fetch(this.base + '/api/export/docx', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(input),
-    })
+    const res = await this.send('POST', '/api/export/docx', input)
     if (!res.ok) throw new Error(`API POST /api/export/docx -> ${res.status}`)
     return res.blob()
   }
 
   async fillTemplate(templateId: string, data: Record<string, unknown>): Promise<Blob> {
-    const res = await fetch(this.base + `/api/templates/${templateId}/fill`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ data }),
-    })
+    const res = await this.send('POST', `/api/templates/${templateId}/fill`, { data })
     if (!res.ok) throw new Error(`API POST /api/templates/${templateId}/fill -> ${res.status}`)
     return res.blob()
   }

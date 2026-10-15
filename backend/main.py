@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 """流光简历 · 第二阶段后端入口：API + 托管构建后的前端（同源免 CORS）。"""
+import os
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from . import store
@@ -14,6 +16,20 @@ DIST = ROOT / 'dist'
 app = FastAPI(title='流光简历 · 后端', version='2.0.0')
 
 app.include_router(api_router, prefix='/api')
+
+# 访问口令保护：仅在设置环境变量 RESUME_ACCESS_TOKEN 时启用（公网/隧道场景必须设置）
+ACCESS_TOKEN = os.environ.get('RESUME_ACCESS_TOKEN', '').strip()
+PUBLIC_API_PATHS = {'/api/health'}
+
+
+@app.middleware('http')
+async def access_token_guard(request, call_next):
+    path = request.url.path
+    if ACCESS_TOKEN and path.startswith('/api/') and path not in PUBLIC_API_PATHS:
+        token = request.headers.get('x-access-token') or request.cookies.get('resume_token')
+        if token != ACCESS_TOKEN:
+            return JSONResponse({'detail': '需要访问口令'}, status_code=401)
+    return await call_next(request)
 
 # 首次启动播种 8 个信息库
 store.seed_sections()

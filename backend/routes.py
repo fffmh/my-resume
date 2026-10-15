@@ -11,6 +11,20 @@ router = APIRouter()
 DEFAULT_PLACEHOLDERS = ['姓名', '电话', '邮箱', '求职意向', '工作经历', '项目经历', '教育经历', '技能', '自我评价']
 
 
+def _mask_key(key: str) -> str:
+    if not key:
+        return ''
+    if len(key) <= 8:
+        return '*' * len(key)
+    return f'{key[:3]}****{key[-4:]}'
+
+
+@router.get('/health')
+def health():
+    import os
+    return {'ok': True, 'authRequired': bool(os.environ.get('RESUME_ACCESS_TOKEN', ''))}
+
+
 # ---------------- 信息库 ----------------
 @router.get('/info/sections')
 def get_sections():
@@ -238,12 +252,22 @@ def export_docx(body: ExportDocxBody):
 # ---------------- 设置 ----------------
 @router.get('/settings')
 def get_settings():
-    return store.get_settings()
+    settings = store.get_settings()
+    llm = dict(settings.get('llm') or {})
+    llm['apiKey'] = _mask_key(llm.get('apiKey', ''))
+    return {**settings, 'llm': llm}
 
 
 @router.put('/settings')
 def save_settings(settings: dict):
-    store.save_settings(settings)
+    current = store.get_settings()
+    llm = dict(settings.get('llm') or {})
+    incoming = llm.get('apiKey', '')
+    old_key = ((current.get('llm') or {}).get('apiKey') or '')
+    # 前端拿到的是掩码值（含 *）→ 保持原 Key 不变；传空字符串 → 清空
+    if incoming and '*' in incoming:
+        llm['apiKey'] = old_key
+    store.save_settings({**settings, 'llm': llm})
     return {'ok': True}
 
 

@@ -46,7 +46,8 @@ def test_generate_and_resumes():
 
 def test_settings_and_data():
     client.put('/api/settings', json={'llm': {'baseUrl': 'https://api.deepseek.com', 'apiKey': 'sk-t', 'model': 'deepseek-chat'}})
-    assert client.get('/api/settings').json()['llm']['apiKey'] == 'sk-t'
+    masked = client.get('/api/settings').json()['llm']['apiKey']
+    assert '*' in masked and 'sk-t' not in masked  # Key 不回传明文
 
     payload = client.get('/api/data/export').json()
     client.delete('/api/data')

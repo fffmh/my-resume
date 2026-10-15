@@ -84,7 +84,7 @@ async function clearAll() {
         <div class="panel-head">
           <div>
             <h2>AI 引擎（第二阶段启用）</h2>
-            <p class="muted">当前为演示版，配置项已保存；接入 FastAPI 后端后，此配置将用于真实的大模型润色。</p>
+            <p class="muted">已保存的 Key 以掩码显示（如 sk-****fc6d）；要更换请直接粘贴新 Key，留空保存则清空。</p>
           </div>
           <span class="chip">即将上线</span>
         </div>
