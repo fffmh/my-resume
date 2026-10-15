@@ -22,7 +22,8 @@ def _mask_key(key: str) -> str:
 @router.get('/health')
 def health():
     import os
-    return {'ok': True, 'authRequired': bool(os.environ.get('RESUME_ACCESS_TOKEN', ''))}
+    token = os.environ.get('RESUME_ACCESS_TOKEN', '').strip() or str(store.get_settings().get('accessToken') or '').strip()
+    return {'ok': True, 'authRequired': bool(token)}
 
 
 # ---------------- 信息库 ----------------
@@ -252,10 +253,13 @@ def export_docx(body: ExportDocxBody):
 # ---------------- 设置 ----------------
 @router.get('/settings')
 def get_settings():
-    settings = store.get_settings()
+    settings = dict(store.get_settings())
     llm = dict(settings.get('llm') or {})
     llm['apiKey'] = _mask_key(llm.get('apiKey', ''))
-    return {**settings, 'llm': llm}
+    settings.pop('accessToken', None)  # 服务端口令不回传
+    settings['accessTokenSet'] = bool(store.get_settings().get('accessToken'))
+    settings['llm'] = llm
+    return settings
 
 
 @router.put('/settings')
@@ -267,7 +271,13 @@ def save_settings(settings: dict):
     # 前端拿到的是掩码值（含 *）→ 保持原 Key 不变；传空字符串 → 清空
     if incoming and '*' in incoming:
         llm['apiKey'] = old_key
-    store.save_settings({**settings, 'llm': llm})
+    # 保留服务端已配置的访问口令（除非显式传入新的 accessToken）
+    new_settings = {**settings, 'llm': llm}
+    if not new_settings.get('accessToken'):
+        old_token = current.get('accessToken')
+        if old_token:
+            new_settings['accessToken'] = old_token
+    store.save_settings(new_settings)
     return {'ok': True}
 
 

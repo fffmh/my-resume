@@ -18,13 +18,24 @@ app = FastAPI(title='流光简历 · 后端', version='2.0.0')
 app.include_router(api_router, prefix='/api')
 
 # 访问口令保护：仅在设置环境变量 RESUME_ACCESS_TOKEN 时启用（公网/隧道场景必须设置）
-ACCESS_TOKEN = os.environ.get('RESUME_ACCESS_TOKEN', '').strip()
 PUBLIC_API_PATHS = {'/api/health'}
+
+
+def current_access_token() -> str:
+    """访问口令：环境变量优先，其次取服务端 settings.json（保证任何启动方式都受保护）。"""
+    tok = os.environ.get('RESUME_ACCESS_TOKEN', '').strip()
+    if tok:
+        return tok
+    try:
+        return str(store.get_settings().get('accessToken') or '').strip()
+    except Exception:
+        return ''
 
 
 @app.middleware('http')
 async def access_token_guard(request, call_next):
     path = request.url.path
+    ACCESS_TOKEN = current_access_token()
     if ACCESS_TOKEN and path.startswith('/api/') and path not in PUBLIC_API_PATHS:
         token = request.headers.get('x-access-token') or request.cookies.get('resume_token')
         if token != ACCESS_TOKEN:
