@@ -18,3 +18,13 @@ __pycache__/
 test-results
 
 playwright-report
+
+deploy/cpolar/
+
+*.msi
+
+resume-deploy.tar.gz
+
+verify_out.txt
+
+e2e.log
