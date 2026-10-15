@@ -33,3 +33,7 @@ e2e.log
 
 backend_now.txt*
 tunnel_now.txt*
+
+.demo-data
+
+docs/screenshots/frames/

@@ -10,9 +10,56 @@
 > 🌐 云服务器长期部署（域名 + HTTPS）请见 [DEPLOY.md](DEPLOY.md)
 > 🔄 项目交接/接手说明（给下一个对话或同事）请见 [HANDOFF.md](HANDOFF.md)
 
-一个类 Boss直聘/猎聘 风格的简历工作台（**第一阶段：纯前端展示版**）。
+一个类 Boss直聘/猎聘 风格的**简历工作台**：信息库 → 智能导入 → 岗位匹配生成 → 简历库语义分组，覆盖从素材积累到成品导出的完整闭环。
 
-**JARVIS 全息 HUD 界面**（深色为主，顶栏可切换亮色主题）；数据仅保存在访客浏览器（IndexedDB）；导入支持 .txt/.md/.docx/.pdf 半真解析；生成简历按目标岗位从信息库筛选素材、本地规则润色并给出**岗位匹配评分与建议**；简历库支持搜索并按岗位与内容相似度自动分组（Web Worker 计算）；简历可**打印 / 另存为 PDF**。
+**JARVIS 全息 HUD 界面**（暗/亮双主题）· **RAG 混合检索**（BM25 + 向量 + RRF 融合）· **大模型润色与 HR 评分卡** · **真实 Word/PDF 模板保真填写** · 8 套内置简历风格 · PWA 可安装。
+
+两种形态并存：**在线展示版**（GitHub Pages，数据存访客浏览器）+ **本机全功能版**（FastAPI 后端，含 AI / RAG / 模板导出）。
+
+## 演示
+
+![演示动图](docs/screenshots/demo.gif)
+
+| 首页（JARVIS 暗色） | 亮色主题 |
+|---|---|
+| ![首页](docs/screenshots/01-home-dark.png) | ![亮色](docs/screenshots/02-home-light.png) |
+
+| 生成简历 + 岗位匹配评分 | 简历库（语义分组） |
+|---|---|
+| ![评分](docs/screenshots/03-score.png) | ![简历库](docs/screenshots/04-library.png) |
+
+| 语义搜索（「首屏加载变快」命中性能优化） | 导入识别 + 置信度分级 |
+|---|---|
+| ![语义搜索](docs/screenshots/05-semantic-search.png) | ![导入](docs/screenshots/06-import-confidence.png) |
+
+<p align="center"><img src="docs/screenshots/07-mobile.png" width="260" alt="移动端" /></p>
+
+## 架构
+
+```mermaid
+flowchart LR
+  U[浏览器 / 手机] -->|HTTPS| T[cpolar 隧道 / 云服务器]
+  T --> B[FastAPI 后端]
+  B --> S[(data/ JSON 存储<br/>info · resumes · templates)]
+  B --> V[(chroma 向量库)]
+  B --> E[bge-small-zh 嵌入<br/>本地 CPU]
+  B --> D[文档引擎<br/>python-docx · docxtpl · PyMuPDF]
+  B --> L[DeepSeek API<br/>润色 · 评分 · 抽取]
+  B -->|同源托管| F[Vue3 构建产物]
+```
+
+**技术亮点**
+
+| 亮点 | 说明 |
+|---|---|
+| 适配器模式零侵入升级 | `IResumeAPI` + `LocalStorageAdapter` / `HttpAdapter`，一行切换即从展示版升级为全功能版 |
+| RAG 混合检索 | jieba BM25（词法）+ bge 向量（语义）→ RRF 融合；口语化查询（"首屏加载变快"）能命中"性能优化" |
+| self-RAG 范文库 | 内置 5 份岗位范文 + 自动索引用户历史简历，润色时优先参考个人风格 |
+| LLM 工程化 | few-shot + 四层指令（事实→措辞→量化→关键词）+ 结构化 JSON 输出 + 重试降级 + 防虚构约束 |
+| 评分融合 | 规则四维评分与 HR 评分卡按 4:6 融合，输出维度分与可执行建议 |
+| 文档保真 | docxtpl 占位符/循环填写 Word；PyMuPDF 填充 PDF 表单域 + 多行区域自适应 |
+| 公网安全 | API Key 只回传掩码；除健康检查外所有接口需访问口令（服务端持久化） |
+| 质量体系 | 前端 24 + 后端 46 + E2E 5 测试，GitHub Actions CI 自动执行 |
 
 ## 功能
 
@@ -20,10 +67,10 @@
 |---|---|
 | 信息库 | 8 个内置库 + 自定义信息库，增删改即存即用；首页「一键体验」可填充完整示例数据 |
 | 导入文件 | 读取本地文件，真实抽取文本（txt/md 直读、docx 用 mammoth、pdf 用 pdfjs）；识别覆盖更多小节别名（教育背景/专业技能/项目经验等）、带空格手机号、多种日期格式（2021.7-至今）、出生日期、期望城市，可编辑后确认 |
-| 模板管理 | 上传 Word/PDF 模板，识别 `{{占位符}}` 清单（真实填写在第二阶段启用） |
+| 模板管理 | 上传 Word/PDF 模板并识别 `{{占位符}}`；后端模式支持真实填写（docxtpl / PDF 表单域） |
 | 生成简历 | 输入目标岗位 + 可选 JD → 匹配筛选 → 规则润色 → 8 套内置模板（极光/静界/曜石/鎏金/全息/极客/深海/白纸）渲染预览 → **岗位匹配评分仪表 + 优化建议** → 存入简历库 |
 | 简历库 | 支持关键词搜索；按目标岗位 + 内容相似度自动分组（Web Worker，不卡界面）；卡片显示评分徽章；支持预览、打印/另存为 PDF、下载 HTML、删除 |
-| 设置 | AI 引擎配置（第二阶段启用）、数据导出/导入、清空本地数据 |
+| 设置 | AI 引擎配置（DeepSeek Key，掩码显示）、数据导出/导入、清空本地数据 |
 
 ## 本地运行
 
