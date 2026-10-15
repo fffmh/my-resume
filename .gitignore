@@ -30,3 +30,6 @@ verify_out.txt
 e2e.log
 
 .pytest-tmp
+
+backend_now.txt*
+tunnel_now.txt*
